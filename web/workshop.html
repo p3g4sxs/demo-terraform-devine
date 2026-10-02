@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terraform Workshop — Devine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Tokens ── */
+    :root {
+      --aws-orange:   #FF9900;
+      --aws-dark:     #232F3E;
+      --aws-blue:     #1A73C8;
+      --aws-blue-lt:  #E8F4FD;
+      --aws-green:    #1D8348;
+      --aws-green-lt: #E9F7EF;
+      --aws-red:      #C0392B;
+      --aws-red-lt:   #FDEDEC;
+      --aws-yellow:   #F39C12;
+      --aws-yellow-lt:#FEF9E7;
+      --sidebar-w:    280px;
+      --top-h:        60px;
+      --content-max:  860px;
+      --font-body:    'Inter', system-ui, sans-serif;
+      --font-code:    'Fira Code', 'Courier New', monospace;
+      --radius:       6px;
+      --shadow:       0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: #1a1a2e;
+      background: #f5f7fa;
+      line-height: 1.7;
+    }
+
+    /* ══════════════════════════════════
+       TOP BAR
+    ══════════════════════════════════ */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--top-h);
+      background: var(--aws-dark);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 14px; }
+    .topbar-logo {
+      font-size: 22px; font-weight: 700; color: var(--aws-orange);
+      letter-spacing: -0.5px;
+    }
+    .topbar-sep { width: 1px; height: 28px; background: rgba(255,255,255,0.15); }
+    .topbar-title { color: #fff; font-size: 14px; font-weight: 500; opacity: 0.9; }
+    .topbar-badge {
+      background: var(--aws-orange); color: #111;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+      letter-spacing: 0.3px;
+    }
+    .topbar-time {
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+    }
+
+    /* ══════════════════════════════════
+       LAYOUT
+    ══════════════════════════════════ */
+    .layout {
+      display: flex;
+      margin-top: var(--top-h);
+      min-height: calc(100vh - var(--top-h));
+    }
+
+    /* ══════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════ */
+    .sidebar {
+      position: fixed;
+      top: var(--top-h); left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: #fff;
+      border-right: 1px solid #e2e8f0;
+      overflow-y: auto;
+      padding: 20px 0 40px;
+    }
+    .sidebar-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+      text-transform: uppercase; color: #94a3b8;
+      padding: 16px 20px 6px;
+    }
+    .sidebar-link {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 20px;
+      text-decoration: none; color: #475569;
+      font-size: 13px; font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .sidebar-link:hover { background: #f8fafc; color: var(--aws-blue); }
+    .sidebar-link.active {
+      background: var(--aws-blue-lt);
+      color: var(--aws-blue);
+      border-left-color: var(--aws-blue);
+      font-weight: 600;
+    }
+    .sidebar-link .step-num {
+      min-width: 20px; height: 20px;
+      background: #e2e8f0; color: #64748b;
+      border-radius: 50%; font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .sidebar-link.active .step-num {
+      background: var(--aws-blue); color: #fff;
+    }
+    .sidebar-link.done .step-num {
+      background: var(--aws-green); color: #fff;
+    }
+    .sidebar-link.done { color: var(--aws-green); }
+    .sidebar-progress {
+      padding: 12px 20px;
+      border-top: 1px solid #e2e8f0;
+      margin-top: 8px;
+    }
+    .progress-label {
+      font-size: 11px; color: #94a3b8; font-weight: 600;
+      margin-bottom: 6px; display: flex; justify-content: space-between;
+    }
+    .progress-bar {
+      height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: var(--aws-blue);
+      border-radius: 2px; transition: width 0.3s;
+      width: 0%;
+    }
+
+    /* ══════════════════════════════════
+       MAIN CONTENT
+    ══════════════════════════════════ */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 40px 40px 80px;
+    }
+    .content { max-width: var(--content-max); margin: 0 auto; }
+
+    /* ── Page header ── */
+    .page-header {
+      background: linear-gradient(135deg, var(--aws-dark) 0%, #1a3a5c 100%);
+      border-radius: 12px;
+      padding: 36px 40px;
+      margin-bottom: 36px;
+      color: #fff;
+    }
+    .page-header .workshop-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--aws-orange);
+      margin-bottom: 10px;
+    }
+    .page-header h1 {
+      font-size: 28px; font-weight: 700; line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .page-header p { color: rgba(255,255,255,0.75); font-size: 15px; margin-bottom: 20px; }
+    .header-meta {
+      display: flex; flex-wrap: wrap; gap: 20px;
+    }
+    .meta-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: rgba(255,255,255,0.7);
+    }
+    .meta-item .icon { font-size: 15px; }
+    .meta-item strong { color: #fff; }
+
+    /* ── Sections ── */
+    .section {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      margin-bottom: 28px;
+      overflow: hidden;
+      scroll-margin-top: calc(var(--top-h) + 20px);
+    }
+    .section-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; gap: 14px;
+      background: #fafbfc;
+    }
+    .section-num {
+      width: 32px; height: 32px;
+      background: var(--aws-blue); color: #fff;
+      border-radius: 50%; font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-num.orange { background: var(--aws-orange); color: #111; }
+    .section-num.green  { background: var(--aws-green); }
+    .section-title { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+    .section-subtitle { font-size: 13px; color: #64748b; margin-top: 2px; }
+    .section-body { padding: 28px; }
+
+    /* ── Steps ── */
+    .step {
+      display: flex; gap: 16px; margin-bottom: 28px;
+    }
+    .step:last-child { margin-bottom: 0; }
+    .step-marker {
+      display: flex; flex-direction: column; align-items: center;
+      flex-shrink: 0;
+    }
+    .step-dot {
+      width: 28px; height: 28px;
+      background: #e2e8f0; color: #64748b;
+      border-radius: 50%; font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-line {
+      width: 2px; background: #e2e8f0; flex: 1; margin-top: 6px;
+    }
+    .step-content { flex: 1; padding-top: 2px; }
+    .step-content h4 {
+      font-size: 14px; font-weight: 700; color: #1a1a2e;
+      margin-bottom: 6px;
+    }
+    .step-content p { font-size: 14px; color: #475569; margin-bottom: 10px; }
+
+    /* ── Code block ── */
+    .code-block {
+      background: #1e2433;
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 10px 0;
+      box-shadow: var(--shadow);
+    }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px;
+      background: #151b28;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .code-lang {
+      font-size: 11px; font-weight: 600; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .copy-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 600;
+      padding: 3px 10px; border-radius: 4px; cursor: pointer;
+      font-family: var(--font-body);
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .copy-btn.copied { color: #4ade80; border-color: #4ade80; }
+    .code-block pre {
+      margin: 0; padding: 16px;
+      font-family: var(--font-code);
+      font-size: 13px; line-height: 1.65;
+      color: #e2e8f0;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .code-block pre .c  { color: #64748b; } /* comment */
+    .code-block pre .k  { color: #93c5fd; } /* keyword */
+    .code-block pre .s  { color: #86efac; } /* string */
+    .code-block pre .o  { color: var(--aws-orange); } /* orange highlight */
+    .code-block pre .h  { color: #fde68a; } /* highlight */
+
+    /* ── Callouts ── */
+    .callout {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 14px 16px; border-radius: var(--radius);
+      margin: 12px 0; font-size: 14px; line-height: 1.6;
+    }
+    .callout .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .callout-info    { background: var(--aws-blue-lt);   border-left: 4px solid var(--aws-blue); }
+    .callout-success { background: var(--aws-green-lt);  border-left: 4px solid var(--aws-green); }
+    .callout-warning { background: var(--aws-yellow-lt); border-left: 4px solid var(--aws-yellow); }
+    .callout-danger  { background: var(--aws-red-lt);    border-left: 4px solid var(--aws-red); }
+    .callout-info    strong { color: var(--aws-blue); }
+    .callout-success strong { color: var(--aws-green); }
+    .callout-warning strong { color: var(--aws-yellow); }
+    .callout-danger  strong { color: var(--aws-red); }
+    .callout p { margin: 0; color: #374151; }
+
+    /* ── Expected output ── */
+    .expected {
+      border: 1px dashed #cbd5e1;
+      border-radius: var(--radius);
+      padding: 14px 16px; margin: 10px 0;
+      background: #f8fafc;
+    }
+    .expected-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; color: #94a3b8; margin-bottom: 8px;
+    }
+    .expected pre {
+      font-family: var(--font-code); font-size: 12px;
+      color: #475569; white-space: pre-wrap; margin: 0;
+    }
+    .expected .success { color: var(--aws-green); font-weight: 600; }
+
+    /* ── Inline code ── */
+    code {
+      font-family: var(--font-code);
+      font-size: 12.5px;
+      background: #f1f5f9;
+      color: #1e40af;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* ── Divider ── */
+    hr { border: none; border-top: 1px solid #e2e8f0; margin: 24px 0; }
+
+    /* ── File tree ── */
+    .file-tree {
+      background: #1e2433; border-radius: var(--radius);
+      padding: 16px; font-family: var(--font-code);
+      font-size: 13px; color: #e2e8f0; line-height: 1.8;
+      margin: 10px 0;
+    }
+    .file-tree .dir   { color: #93c5fd; font-weight: 600; }
+    .file-tree .file  { color: #86efac; }
+    .file-tree .comment { color: #64748b; }
+
+    /* ── Credentials table ── */
+    .cred-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13.5px; margin: 10px 0;
+    }
+    .cred-table th {
+      background: #f1f5f9; text-align: left;
+      padding: 10px 14px; font-weight: 600; color: #374151;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .cred-table td {
+      padding: 10px 14px; border-bottom: 1px solid #f1f5f9;
+      color: #475569;
+    }
+    .cred-table tr:last-child td { border-bottom: none; }
+    .cred-table .key-val {
+      font-family: var(--font-code); font-size: 12px;
+      color: #1e40af; background: #f1f5f9;
+      padding: 2px 6px; border-radius: 4px;
+    }
+
+    /* ── Architecture diagram ── */
+    .arch-diagram {
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: 10px; padding: 20px 0; margin: 10px 0;
+    }
+    .arch-box {
+      background: #f8fafc; border: 2px solid #e2e8f0;
+      border-radius: 10px; padding: 14px 18px;
+      text-align: center; min-width: 110px;
+    }
+    .arch-box .arch-icon { font-size: 28px; display: block; margin-bottom: 6px; }
+    .arch-box .arch-name { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+    .arch-box .arch-desc { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+    .arch-box.aws-box { border-color: #FF9900; background: #FFF8F0; }
+    .arch-arrow { font-size: 20px; color: #94a3b8; }
+
+    /* ── Completion card ── */
+    .completion-card {
+      background: linear-gradient(135deg, #064e3b, #065f46);
+      border-radius: 12px; padding: 28px 32px;
+      color: #fff; text-align: center;
+    }
+    .completion-card .big-check { font-size: 48px; margin-bottom: 12px; }
+    .completion-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .completion-card p { color: rgba(255,255,255,0.8); font-size: 14px; }
+
+    /* ── Tags ── */
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .tag {
+      font-size: 11px; font-weight: 600; padding: 3px 10px;
+      border-radius: 20px; font-family: var(--font-code);
+    }
+    .tag-orange { background: #FFF3E0; color: #E65100; border: 1px solid #FFB74D; }
+    .tag-blue   { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; }
+    .tag-green  { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+
+    /* ── Nav bottom ── */
+    .nav-bottom {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;
+    }
+    .nav-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 600; text-decoration: none;
+      transition: all 0.15s; border: 1px solid #e2e8f0;
+      color: #475569; background: #fff; cursor: pointer;
+    }
+    .nav-btn:hover { background: #f8fafc; border-color: #cbd5e1; color: #1a1a2e; }
+    .nav-btn.primary {
+      background: var(--aws-blue); color: #fff; border-color: var(--aws-blue);
+    }
+    .nav-btn.primary:hover { background: #1557a0; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 20px 16px 60px; }
+      .page-header { padding: 24px 20px; }
+      .section-body { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     TOP BAR
+══════════════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">⚡ Terraform</div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-title">Workshop de Capacitación — Devine</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <span class="topbar-badge">HANDS-ON</span>
+    <span class="topbar-time">🕙 10:00 AM – 12:00 PM</span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════
+     LAYOUT
+══════════════════════════════════════════ -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-section-label">Introducción</div>
+    <a class="sidebar-link active" href="#intro" onclick="setActive(this)">
+      <span class="step-num">·</span> Objetivo del workshop
+    </a>
+    <a class="sidebar-link" href="#arquitectura" onclick="setActive(this)">
+      <span class="step-num">·</span> Arquitectura
+    </a>
+
+    <div class="sidebar-section-label">Configuración</div>
+    <a class="sidebar-link" href="#paso1" onclick="setActive(this)">
+      <span class="step-num">1</span> Instalar Terraform
+    </a>
+    <a class="sidebar-link" href="#paso2" onclick="setActive(this)">
+      <span class="step-num">2</span> Configurar credenciales AWS
+    </a>
+    <a class="sidebar-link" href="#paso3" onclick="setActive(this)">
+      <span class="step-num">3</span> Clonar el repositorio
+    </a>
+    <a class="sidebar-link" href="#paso4" onclick="setActive(this)">
+      <span class="step-num">4</span> Ajustar terraform.tfvars
+    </a>
+
+    <div class="sidebar-section-label">Despliegue</div>
+    <a class="sidebar-link" href="#paso5" onclick="setActive(this)">
+      <span class="step-num">5</span> terraform init
+    </a>
+    <a class="sidebar-link" href="#paso6" onclick="setActive(this)">
+      <span class="step-num">6</span> terraform plan
+    </a>
+    <a class="sidebar-link" href="#paso7" onclick="setActive(this)">
+      <span class="step-num">7</span> terraform apply
+    </a>
+
+    <div class="sidebar-section-label">Verificación</div>
+    <a class="sidebar-link" href="#paso8" onclick="setActive(this)">
+      <span class="step-num">8</span> Validar el portal
+    </a>
+    <a class="sidebar-link" href="#paso9" onclick="setActive(this)">
+      <span class="step-num">9</span> Explorar el state
+    </a>
+
+    <div class="sidebar-section-label">Limpieza</div>
+    <a class="sidebar-link" href="#paso10" onclick="setActive(this)">
+      <span class="step-num">10</span> terraform destroy
+    </a>
+
+    <div class="sidebar-progress">
+      <div class="progress-label">
+        <span>Progreso</span>
+        <span id="progress-text">0 / 10</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="content">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="workshop-label">🏗️ Workshop · Infraestructura como Código</div>
+        <h1>Despliega un portal web en AWS con Terraform</h1>
+        <p>En este workshop vas a crear desde cero un bucket S3 con un sitio web estático servido a través de CloudFront. Al finalizar tendrás tu propio portal funcionando en producción.</p>
+        <div class="header-meta">
+          <div class="meta-item"><span class="icon">⏱️</span><strong>~45 min</strong> duración</div>
+          <div class="meta-item"><span class="icon">📊</span><strong>Nivel:</strong> principiante</div>
+          <div class="meta-item"><span class="icon">☁️</span><strong>Cloud:</strong> AWS</div>
+          <div class="meta-item"><span class="icon">🛠️</span><strong>Stack:</strong> S3 + CloudFront + Terraform</div>
+        </div>
+      </div>
+
+      <!-- ══ INTRO ══ -->
+      <section class="section" id="intro">
+        <div class="section-header">
+          <div class="section-num orange">★</div>
+          <div>
+            <div class="section-title">Objetivo del workshop</div>
+            <div class="section-subtitle">Qué vas a construir hoy</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <p style="margin-bottom:14px;color:#374151;">Al ejecutar <code>terraform apply</code> se van a crear automáticamente los siguientes recursos en tu cuenta AWS:</p>
+          <div class="tags">
+            <span class="tag tag-orange">aws_s3_bucket</span>
+            <span class="tag tag-orange">aws_s3_bucket_versioning</span>
+            <span class="tag tag-orange">aws_s3_bucket_server_side_encryption_configuration</span>
+            <span class="tag tag-orange">aws_s3_bucket_public_access_block</span>
+            <span class="tag tag-orange">aws_s3_bucket_policy</span>
+            <span class="tag tag-blue">aws_cloudfront_origin_access_control</span>
+            <span class="tag tag-blue">aws_cloudfront_distribution</span>
+            <span class="tag tag-green">aws_s3_object (archivos del portal)</span>
+          </div>
+          <div class="callout callout-info" style="margin-top:16px;">
+            <span class="icon">💡</span>
+            <p><strong>Dato clave:</strong> Todo esto se hace con <strong>3 comandos</strong>: <code>terraform init</code>, <code>terraform plan</code> y <code>terraform apply</code>. Terraform detecta las dependencias entre recursos y los crea en el orden correcto automáticamente.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ ARQUITECTURA ══ -->
+      <section class="section" id="arquitectura">
+        <div class="section-header">
+          <div class="section-num orange">★</div>
+          <div>
+            <div class="section-title">Arquitectura</div>
+            <div class="section-subtitle">Qué recursos se crean y cómo se conectan</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="arch-diagram">
+            <div class="arch-box">
+              <span class="arch-icon">🌐</span>
+              <div class="arch-name">Usuario</div>
+              <div class="arch-desc">Browser</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-box aws-box">
+              <span class="arch-icon">⚡</span>
+              <div class="arch-name">CloudFront</div>
+              <div class="arch-desc">CDN + HTTPS</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-box aws-box">
+              <span class="arch-icon">🔒</span>
+              <div class="arch-name">OAC</div>
+              <div class="arch-desc">Origin Access Control</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-box aws-box">
+              <span class="arch-icon">🪣</span>
+              <div class="arch-name">S3 Bucket</div>
+              <div class="arch-desc">Archivos estáticos</div>
+            </div>
+          </div>
+          <div class="callout callout-info">
+            <span class="icon">🔒</span>
+            <p><strong>Seguridad:</strong> El bucket S3 es <strong>privado</strong>. Solo CloudFront puede leer su contenido a través del OAC (Origin Access Control). Los usuarios nunca acceden directamente a S3.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════
+           CONFIGURACIÓN
+      ══════════════════════ -->
+
+      <!-- PASO 1 -->
+      <section class="section" id="paso1">
+        <div class="section-header">
+          <div class="section-num">1</div>
+          <div>
+            <div class="section-title">Instalar Terraform</div>
+            <div class="section-subtitle">Requiere Terraform >= 1.5.0</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">a</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+              <h4>macOS (recomendado con Homebrew)</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>brew tap hashicorp/tap
+brew install hashicorp/tap/terraform</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">b</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+              <h4>Windows (Chocolatey)</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">powershell</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>choco install terraform</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">c</div>
+            </div>
+            <div class="step-content">
+              <h4>Verificar instalación</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>terraform version</pre>
+              </div>
+              <div class="expected">
+                <div class="expected-label">✓ Salida esperada</div>
+                <pre><span class="success">Terraform v1.5.0</span> (o superior)
+on darwin_arm64</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASO 2 -->
+      <section class="section" id="paso2">
+        <div class="section-header">
+          <div class="section-num">2</div>
+          <div>
+            <div class="section-title">Configurar credenciales AWS</div>
+            <div class="section-subtitle">Las llaves de acceso te las proporciona el instructor</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="callout callout-warning">
+            <span class="icon">⏰</span>
+            <p><strong>Importante:</strong> Las credenciales de este workshop son temporales y solo funcionan el día de hoy de <strong>10:00 AM a 12:00 PM (hora Colombia)</strong>. Después de ese horario quedarán inactivas automáticamente.</p>
+          </div>
+
+          <hr />
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">a</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+              <h4>Crear o editar el archivo de credenciales</h4>
+              <p>Abre (o crea) el archivo <code>~/.aws/credentials</code> y agrega este bloque:</p>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">ini — ~/.aws/credentials</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>[terraform-workshop]
+aws_access_key_id     = TU_ACCESS_KEY_AQUI
+aws_secret_access_key = TU_SECRET_KEY_AQUI</pre>
+              </div>
+              <div class="callout callout-info" style="margin-top:10px;">
+                <span class="icon">💡</span>
+                <p>En macOS/Linux el archivo está en <code>~/.aws/credentials</code>. En Windows en <code>C:\Users\TU_USUARIO\.aws\credentials</code>. Si la carpeta <code>.aws</code> no existe, créala.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">b</div>
+            </div>
+            <div class="step-content">
+              <h4>Verificar que las credenciales funcionan</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>aws sts get-caller-identity --profile terraform-workshop</pre>
+              </div>
+              <div class="expected">
+                <div class="expected-label">✓ Salida esperada</div>
+                <pre>{
+  "UserId": "AIDAXXXXXXXXXXXXXXXXX",
+  "Account": "XXXXXXXXXXXX",
+  "<span class="success">Arn</span>": "arn:aws:iam::XXXX:user/terraform-capacitacion-demo"
+}</pre>
+              </div>
+              <div class="callout callout-danger" style="margin-top:10px;">
+                <span class="icon">🚨</span>
+                <p>Si ves <strong>InvalidClientTokenId</strong> o <strong>AccessDenied</strong>, verifica que copiaste bien la key y el secret. Si el error persiste, avísale al instructor.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASO 3 -->
+      <section class="section" id="paso3">
+        <div class="section-header">
+          <div class="section-num">3</div>
+          <div>
+            <div class="section-title">Clonar el repositorio</div>
+            <div class="section-subtitle">El código base del workshop está en GitHub</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">a</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+              <h4>Clonar y entrar al directorio</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>git clone https://github.com/p3g4sxs/demo-terraform-devine.git
+cd demo-terraform-devine</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">b</div>
+            </div>
+            <div class="step-content">
+              <h4>Explorar la estructura del proyecto</h4>
+              <div class="file-tree">
+<span class="dir">demo-terraform-devine/</span>
+├── <span class="file">providers.tf</span>    <span class="comment"># Configura el provider de AWS</span>
+├── <span class="file">main.tf</span>         <span class="comment"># Recursos: S3 + CloudFront</span>
+├── <span class="file">variables.tf</span>    <span class="comment"># Definición de variables</span>
+├── <span class="file">outputs.tf</span>      <span class="comment"># URL del portal al finalizar</span>
+├── <span class="file">terraform.tfvars</span><span class="comment"># ← TÚ editas este archivo</span>
+├── <span class="file">backend.tf</span>      <span class="comment"># Remote state (comentado en demo)</span>
+└── <span class="dir">web/</span>            <span class="comment"># Archivos del portal</span>
+    └── <span class="file">index.html</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASO 4 -->
+      <section class="section" id="paso4">
+        <div class="section-header">
+          <div class="section-num">4</div>
+          <div>
+            <div class="section-title">Ajustar terraform.tfvars</div>
+            <div class="section-subtitle">El nombre del bucket S3 debe ser único globalmente en AWS</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="callout callout-warning">
+            <span class="icon">⚠️</span>
+            <p><strong>Importante:</strong> Los nombres de buckets S3 son <strong>únicos a nivel global</strong> en toda AWS. Si otro participante usa el mismo nombre, el deploy fallará. Usa tu nombre o iniciales como sufijo.</p>
+          </div>
+
+          <div class="step" style="margin-top:16px;">
+            <div class="step-marker">
+              <div class="step-dot">a</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+              <h4>Abre el archivo <code>terraform.tfvars</code></h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>code terraform.tfvars       # VS Code
+# o
+nano terraform.tfvars      # terminal</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">b</div>
+            </div>
+            <div class="step-content">
+              <h4>Cambia el valor de <code>portal_bucket_name</code></h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">hcl — terraform.tfvars</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>aws_region   = "us-east-1"
+project_name = "terraform-capacitacion"
+environment  = "demo"
+
+# ✏️ Cambia "tu-nombre" por tus iniciales o nombre
+portal_bucket_name = "terraform-capacitacion-portal-tu-nombre"
+
+force_destroy_bucket   = true
+cloudfront_price_class = "PriceClass_100"
+cloudfront_comment     = "Portal de Capacitación Terraform"</pre>
+              </div>
+              <div class="callout callout-success" style="margin-top:10px;">
+                <span class="icon">✅</span>
+                <p><strong>Ejemplos válidos:</strong> <code>terraform-capacitacion-portal-juan</code>, <code>terraform-capacitacion-portal-jgomez</code>, <code>terraform-capacitacion-portal-2oct</code></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════
+           DESPLIEGUE
+      ══════════════════════ -->
+
+      <!-- PASO 5 -->
+      <section class="section" id="paso5">
+        <div class="section-header">
+          <div class="section-num green">5</div>
+          <div>
+            <div class="section-title">terraform init</div>
+            <div class="section-subtitle">Descarga el provider de AWS — siempre es el primer paso</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <p style="color:#374151;margin-bottom:14px;"><code>terraform init</code> descarga el provider de AWS que está definido en <code>providers.tf</code>. Es equivalente a un <code>npm install</code> — solo necesitas correrlo una vez al clonar el repo.</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+            </div>
+            <pre>terraform init</pre>
+          </div>
+
+          <div class="expected" style="margin-top:12px;">
+            <div class="expected-label">✓ Salida esperada</div>
+            <pre>Initializing the backend...
+Initializing provider plugins...
+- Finding hashicorp/aws versions matching "~> 5.0"...
+- Installing hashicorp/aws v5.x.x...
+- Installed hashicorp/aws v5.x.x (signed by HashiCorp)
+
+<span class="success">Terraform has been successfully initialized!</span></pre>
+          </div>
+
+          <div class="callout callout-info" style="margin-top:12px;">
+            <span class="icon">📁</span>
+            <p>Después del init se crea la carpeta <code>.terraform/</code> con el binario del provider. No la subas al repo — ya está en el <code>.gitignore</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASO 6 -->
+      <section class="section" id="paso6">
+        <div class="section-header">
+          <div class="section-num green">6</div>
+          <div>
+            <div class="section-title">terraform plan</div>
+            <div class="section-subtitle">Previsualiza los cambios — no hace nada en AWS</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <p style="color:#374151;margin-bottom:14px;"><code>terraform plan</code> compara tu código con el estado actual de AWS y muestra exactamente qué va a crear, modificar o destruir. <strong>No hace ningún cambio real.</strong></p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+            </div>
+            <pre>terraform plan</pre>
+          </div>
+
+          <div class="expected" style="margin-top:12px;">
+            <div class="expected-label">✓ Salida esperada (resumen final)</div>
+            <pre>  + resource "aws_s3_bucket" "portal" { ... }
+  + resource "aws_cloudfront_distribution" "portal" { ... }
+  + resource "aws_s3_object" "web_files" { ... }
+  ...
+
+<span class="success">Plan: 8 to add, 0 to change, 0 to destroy.</span></pre>
+          </div>
+
+          <div class="callout callout-info" style="margin-top:12px;">
+            <span class="icon">💡</span>
+            <p>Los símbolos del plan: <code style="color:#2E7D32;background:#E8F5E9;">+</code> crear &nbsp; <code style="color:#E65100;background:#FFF3E0;">~</code> modificar &nbsp; <code style="color:#C0392B;background:#FDEDEC;">-</code> destruir. Si ves destrucciones inesperadas, detente y revisa antes de continuar.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASO 7 -->
+      <section class="section" id="paso7">
+        <div class="section-header">
+          <div class="section-num green">7</div>
+          <div>
+            <div class="section-title">terraform apply</div>
+            <div class="section-subtitle">Crea la infraestructura real en AWS (~3 minutos)</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="callout callout-warning">
+            <span class="icon">⚠️</span>
+            <p><strong>Este comando crea recursos reales en AWS.</strong> Revisa el plan del paso anterior antes de confirmar. Cuando Terraform pregunte <code>Enter a value:</code> escribe <strong>yes</strong> y presiona Enter.</p>
+          </div>
+
+          <div class="code-block" style="margin-top:14px;">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+            </div>
+            <pre>terraform apply</pre>
+          </div>
+
+          <div class="expected" style="margin-top:12px;">
+            <div class="expected-label">✓ Terraform preguntará confirmación</div>
+            <pre>Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: <span class="success">yes</span></pre>
+          </div>
+
+          <div class="expected" style="margin-top:12px;">
+            <div class="expected-label">✓ Salida al finalizar (~3 minutos)</div>
+            <pre><span class="success">Apply complete! Resources: 8 added, 0 changed, 0 destroyed.</span>
+
+Outputs:
+
+portal_url = "<span class="success">https://xxxxxxxxxx.cloudfront.net</span>"</pre>
+          </div>
+
+          <div class="callout callout-success" style="margin-top:12px;">
+            <span class="icon">🎉</span>
+            <p><strong>¡Listo!</strong> El output <code>portal_url</code> es la URL de tu portal. Ábrela en el navegador — puede tardar 1-2 minutos en propagarse por la red de CloudFront.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════
+           VERIFICACIÓN
+      ══════════════════════ -->
+
+      <!-- PASO 8 -->
+      <section class="section" id="paso8">
+        <div class="section-header">
+          <div class="section-num">8</div>
+          <div>
+            <div class="section-title">Validar el portal</div>
+            <div class="section-subtitle">Confirma que todo funciona correctamente</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">a</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+              <h4>Ver la URL del portal</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>terraform output portal_url</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">b</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+              <h4>Abrir automáticamente en macOS</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>open $(terraform output -raw portal_url)</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">c</div>
+            </div>
+            <div class="step-content">
+              <h4>Ver todos los outputs</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>terraform output</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASO 9 -->
+      <section class="section" id="paso9">
+        <div class="section-header">
+          <div class="section-num">9</div>
+          <div>
+            <div class="section-title">Explorar el state</div>
+            <div class="section-subtitle">Observa cómo Terraform registra lo que creó</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <p style="color:#374151;margin-bottom:14px;">El <strong>state</strong> (<code>terraform.tfstate</code>) es la memoria de Terraform: sabe exactamente qué recursos creó, con qué IDs y en qué estado están.</p>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">a</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+              <h4>Listar todos los recursos gestionados</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>terraform state list</pre>
+              </div>
+              <div class="expected" style="margin-top:8px;">
+                <div class="expected-label">✓ Salida esperada</div>
+                <pre>aws_cloudfront_distribution.portal
+aws_cloudfront_origin_access_control.portal
+aws_s3_bucket.portal
+aws_s3_bucket_policy.portal
+aws_s3_bucket_public_access_block.portal
+aws_s3_bucket_server_side_encryption_configuration.portal
+aws_s3_bucket_versioning.portal
+aws_s3_object.web_files["index.html"]</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">b</div>
+            </div>
+            <div class="step-content">
+              <h4>Ver detalles del bucket S3</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>terraform state show aws_s3_bucket.portal</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════
+           LIMPIEZA
+      ══════════════════════ -->
+
+      <!-- PASO 10 -->
+      <section class="section" id="paso10">
+        <div class="section-header">
+          <div class="section-num" style="background:#C0392B;">10</div>
+          <div>
+            <div class="section-title">terraform destroy</div>
+            <div class="section-subtitle">Elimina todos los recursos y evita costos en AWS</div>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="callout callout-danger">
+            <span class="icon">🗑️</span>
+            <p><strong>Este comando elimina permanentemente todos los recursos creados en AWS.</strong> Solo ejecútalo cuando hayas terminado el workshop. Los recursos de CloudFront generan costos si se dejan activos.</p>
+          </div>
+
+          <div class="code-block" style="margin-top:14px;">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+            </div>
+            <pre>terraform destroy</pre>
+          </div>
+
+          <div class="expected" style="margin-top:12px;">
+            <div class="expected-label">✓ Salida al finalizar</div>
+            <pre>Destroy complete! <span class="success">Resources: 8 destroyed.</span></pre>
+          </div>
+
+          <hr />
+
+          <!-- Completion -->
+          <div class="completion-card">
+            <div class="big-check">🏆</div>
+            <h3>¡Workshop completado!</h3>
+            <p>Desplegaste y destruiste infraestructura real en AWS usando Terraform.<br/>
+            Un bucket S3, una distribución CloudFront y todos sus recursos — con 3 comandos.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- NAV BOTTOM -->
+      <div class="nav-bottom">
+        <span style="font-size:13px;color:#94a3b8;">Terraform Workshop · Devine · 2026</span>
+        <a class="nav-btn primary" href="#intro">↑ Volver al inicio</a>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /layout -->
+
+<script>
+  // ── Copy to clipboard ──
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.textContent = '✓ Copiado';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copiar';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // ── Active sidebar link ──
+  function setActive(el) {
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // ── Scroll spy ──
+  const sections = document.querySelectorAll('section[id]');
+  const links    = document.querySelectorAll('.sidebar-link[href^="#"]');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        links.forEach(l => {
+          l.classList.remove('active');
+          if (l.getAttribute('href') === '#' + id) l.classList.add('active');
+        });
+      }
+    });
+  }, { rootMargin: '-60px 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // ── Progress tracker ──
+  const checkboxSteps = [
+    'paso1','paso2','paso3','paso4',
+    'paso5','paso6','paso7',
+    'paso8','paso9','paso10'
+  ];
+  const completed = new Set();
+
+  sections.forEach(section => {
+    const stepObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && checkboxSteps.includes(entry.target.id)) {
+          completed.add(entry.target.id);
+          updateProgress();
+        }
+      });
+    }, { threshold: 0.5 });
+    stepObserver.observe(section);
+  });
+
+  function updateProgress() {
+    const count = completed.size;
+    const total = checkboxSteps.length;
+    document.getElementById('progress-text').textContent = count + ' / ' + total;
+    document.getElementById('progress-fill').style.width = (count / total * 100) + '%';
+
+    // Mark sidebar links as done
+    completed.forEach(id => {
+      const link = document.querySelector('.sidebar-link[href="#' + id + '"]');
+      if (link) link.classList.add('done');
+    });
+  }
+</script>
+</body>
+</html>
