@@ -598,24 +598,36 @@
           <div class="section-num">1</div>
           <div>
             <div class="section-title">Instalar Terraform</div>
-            <div class="section-subtitle">Requiere Terraform >= 1.5.0</div>
+            <div class="section-subtitle">Windows con WSL2 (Ubuntu) · Requiere Terraform >= 1.5.0</div>
           </div>
         </div>
         <div class="section-body">
-          <div class="step">
+          <div class="callout callout-info">
+            <span class="icon">🐧</span>
+            <p><strong>Todos los comandos se ejecutan dentro de WSL2 (Ubuntu).</strong> Abre tu terminal de Ubuntu desde el menú de inicio o ejecuta <code>wsl</code> en PowerShell para entrar.</p>
+          </div>
+
+          <div class="step" style="margin-top:16px;">
             <div class="step-marker">
               <div class="step-dot">a</div>
               <div class="step-line"></div>
             </div>
             <div class="step-content">
-              <h4>macOS (recomendado con Homebrew)</h4>
+              <h4>Agregar el repositorio oficial de HashiCorp</h4>
               <div class="code-block">
                 <div class="code-header">
-                  <span class="code-lang">bash</span>
+                  <span class="code-lang">bash — WSL2 Ubuntu</span>
                   <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
                 </div>
-                <pre>brew tap hashicorp/tap
-brew install hashicorp/tap/terraform</pre>
+                <pre>sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
+
+wget -O- https://apt.releases.hashicorp.com/gpg | \
+  gpg --dearmor | \
+  sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+  sudo tee /etc/apt/sources.list.d/hashicorp.list</pre>
               </div>
             </div>
           </div>
@@ -626,13 +638,13 @@ brew install hashicorp/tap/terraform</pre>
               <div class="step-line"></div>
             </div>
             <div class="step-content">
-              <h4>Windows (Chocolatey)</h4>
+              <h4>Instalar Terraform</h4>
               <div class="code-block">
                 <div class="code-header">
-                  <span class="code-lang">powershell</span>
+                  <span class="code-lang">bash — WSL2 Ubuntu</span>
                   <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
                 </div>
-                <pre>choco install terraform</pre>
+                <pre>sudo apt-get update && sudo apt-get install -y terraform</pre>
               </div>
             </div>
           </div>
@@ -640,20 +652,39 @@ brew install hashicorp/tap/terraform</pre>
           <div class="step">
             <div class="step-marker">
               <div class="step-dot">c</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-content">
+              <h4>Instalar AWS CLI (si no lo tienes)</h4>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">bash — WSL2 Ubuntu</span>
+                  <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+                </div>
+                <pre>sudo apt-get install -y awscli</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-marker">
+              <div class="step-dot">d</div>
             </div>
             <div class="step-content">
               <h4>Verificar instalación</h4>
               <div class="code-block">
                 <div class="code-header">
-                  <span class="code-lang">bash</span>
+                  <span class="code-lang">bash — WSL2 Ubuntu</span>
                   <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
                 </div>
-                <pre>terraform version</pre>
+                <pre>terraform version && aws --version</pre>
               </div>
               <div class="expected">
                 <div class="expected-label">✓ Salida esperada</div>
                 <pre><span class="success">Terraform v1.5.0</span> (o superior)
-on darwin_arm64</pre>
+on linux_amd64
+
+aws-cli/2.x.x Python/3.x.x Linux/...</pre>
               </div>
             </div>
           </div>
@@ -696,7 +727,7 @@ aws_secret_access_key = TU_SECRET_KEY_AQUI</pre>
               </div>
               <div class="callout callout-info" style="margin-top:10px;">
                 <span class="icon">💡</span>
-                <p>En macOS/Linux el archivo está en <code>~/.aws/credentials</code>. En Windows en <code>C:\Users\TU_USUARIO\.aws\credentials</code>. Si la carpeta <code>.aws</code> no existe, créala.</p>
+                <p>Dentro de WSL2 el archivo está en <code>~/.aws/credentials</code>. Si la carpeta no existe, créala con <code>mkdir -p ~/.aws</code> y luego edita el archivo con <code>nano ~/.aws/credentials</code>.</p>
               </div>
             </div>
           </div>
@@ -1010,13 +1041,14 @@ portal_url = "<span class="success">https://xxxxxxxxxx.cloudfront.net</span>"</p
               <div class="step-line"></div>
             </div>
             <div class="step-content">
-              <h4>Abrir automáticamente en macOS</h4>
+              <h4>Abrir automáticamente en WSL2</h4>
               <div class="code-block">
                 <div class="code-header">
-                  <span class="code-lang">bash</span>
+                  <span class="code-lang">bash — WSL2 Ubuntu</span>
                   <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
                 </div>
-                <pre>open $(terraform output -raw portal_url)</pre>
+                <pre>explorer.exe $(wslpath -w $(terraform output -raw portal_url) 2>/dev/null) 2>/dev/null || \
+  echo "URL: $(terraform output -raw portal_url)"</pre>
               </div>
             </div>
           </div>
