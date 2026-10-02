@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────
+# Terraform
+# ─────────────────────────────────────────────
+
+# Directorio de plugins y providers (terraform init los descarga)
+.terraform/
+
+# Lock file de versiones — ESTE SÍ se commitea
+# .terraform.lock.hcl
+
+# State local — NUNCA subir al repo (contiene secretos e IDs reales)
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
+
+# Archivos de plan (pueden contener valores sensibles)
+*.tfplan
+tfplan
+plan.out
+
+# Variables con secretos — cuidado con este
+# terraform.tfvars  ← descomenta si tiene secretos
+*.tfvars.json
+
+# Crash logs de Terraform
+crash.log
+crash.*.log
+
+# Override files (usados para pruebas locales, no para el equipo)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ─────────────────────────────────────────────
+# Sistema operativo
+# ─────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# ─────────────────────────────────────────────
+# Editores
+# ─────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~

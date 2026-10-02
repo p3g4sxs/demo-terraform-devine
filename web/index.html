@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terraform — Capacitación</title>
+
+  <!-- Tipografía: Inter (cuerpo) + Fira Code (código) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Reveal.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css" />
+
+  <style>
+    /* ══════════════════════════════════════
+       VARIABLES Y BASE
+    ══════════════════════════════════════ */
+    :root {
+      --tf-purple:  #7B42BC;
+      --tf-purple2: #a78bfa;
+      --tf-blue:    #4A90D9;
+      --tf-green:   #60C060;
+      --tf-orange:  #E87722;
+      --tf-red:     #f87171;
+      --tf-dark:    #0f0f1a;
+      --tf-card:    rgba(255,255,255,0.04);
+      --tf-border:  rgba(255,255,255,0.10);
+      --radius:     10px;
+    }
+
+    /* ── Fuente base ── */
+    .reveal,
+    .reveal h1, .reveal h2, .reveal h3,
+    .reveal h4, .reveal h5, .reveal p,
+    .reveal li, .reveal td, .reveal th {
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .reveal pre,
+    .reveal code,
+    .reveal .code-label {
+      font-family: 'Fira Code', 'Courier New', monospace;
+    }
+
+    /* ── Reveal: centrado vertical real + sin scroll ── */
+    .reveal .slides {
+      text-align: center;
+    }
+    .reveal .slides section {
+      box-sizing: border-box;
+      /* Padding superior/inferior proporcional: empuja el contenido al centro visual */
+      padding: 4vh 3% 3vh !important;
+      height: 100%;
+      display: flex !important;
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      overflow: hidden !important;
+    }
+    .reveal .slides section > * {
+      box-sizing: border-box;
+    }
+    /* Notas del ponente: ocultas en la presentación, visibles en modo speaker */
+    .reveal section .notes {
+      display: none;
+    }
+
+    /* ── Headings ── */
+    .reveal h1 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); font-weight: 900; line-height: 1.1; }
+    .reveal h2 { font-size: clamp(1.2rem, 2.5vw, 1.8rem); font-weight: 800; margin-bottom: 0.4em; }
+    .reveal h3 { font-size: clamp(1rem,   2vw,  1.4rem);  font-weight: 700; margin-bottom: 0.3em; }
+    .reveal h4 { font-size: clamp(0.8rem, 1.5vw, 1rem);   font-weight: 600; margin: 0 0 0.3em; }
+    .reveal p  { font-size: clamp(0.7rem, 1.3vw, 0.9rem); line-height: 1.5; margin: 0.2em 0; }
+
+    /* ── Code ── */
+    .reveal pre {
+      margin: 0.3em 0;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      font-size: clamp(0.55rem, 1vw, 0.72rem) !important;
+      line-height: 1.5;
+    }
+    .reveal pre code {
+      max-height: 46vh;
+      padding: 12px 14px !important;
+    }
+    .reveal code { font-size: 0.88em; background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px; }
+
+    /* ── Code label ── */
+    .code-label {
+      display: inline-block;
+      background: var(--tf-purple);
+      color: #fff;
+      font-size: clamp(0.5rem, 0.8vw, 0.65rem);
+      padding: 2px 10px;
+      border-radius: 4px 4px 0 0;
+      margin-bottom: -2px;
+    }
+
+    /* ══════════════════════════════════════
+       COMPONENTES REUTILIZABLES
+    ══════════════════════════════════════ */
+
+    /* Badges de audiencia */
+    .badges {
+      display: flex; flex-wrap: wrap;
+      justify-content: center; gap: 8px;
+      margin: 0.6em 0;
+    }
+    .badge {
+      padding: 4px 14px; border-radius: 20px;
+      font-size: clamp(0.55rem, 1vw, 0.7rem);
+      font-weight: 600; letter-spacing: 0.3px;
+    }
+    .badge-dev  { background: #1d4ed8; color:#fff; }
+    .badge-arch { background: #7c3aed; color:#fff; }
+    .badge-pm   { background: #0891b2; color:#fff; }
+    .badge-mgr  { background: #065f46; color:#fff; }
+
+    /* Cards genéricas */
+    .card {
+      background: var(--tf-card);
+      border: 1px solid var(--tf-border);
+      border-radius: var(--radius);
+      padding: clamp(8px, 1.5vw, 14px) clamp(10px, 2vw, 18px);
+      text-align: left;
+      font-size: clamp(0.6rem, 1.1vw, 0.78rem);
+    }
+    .card h4 { color: var(--tf-purple2); }
+
+    /* Grid 2 cols */
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px,1.5vw,14px); }
+    .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: clamp(6px,1vw,12px); }
+
+    /* Cards de comparación */
+    .card-bad  { background: rgba(220,38,38,0.1);  border-color: rgba(220,38,38,0.35); }
+    .card-good { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.35); }
+    .card-bad  h4 { color: var(--tf-red); }
+    .card-good h4 { color: #4ade80; }
+
+    /* Listas compactas */
+    .card ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
+
+    /* Flow horizontal */
+    .flow {
+      display: flex; align-items: center;
+      justify-content: center; flex-wrap: wrap;
+      gap: 6px; margin: 0.5em 0;
+    }
+    .flow-step {
+      background: rgba(123,66,188,0.18);
+      border: 1px solid var(--tf-purple);
+      border-radius: 8px;
+      padding: 6px 12px;
+      text-align: center;
+      font-size: clamp(0.55rem, 1vw, 0.7rem);
+      min-width: 80px;
+    }
+    .flow-step .icon { font-size: 1.5em; display: block; line-height: 1.2; }
+    .flow-arrow { color: var(--tf-purple); font-size: 1.1em; }
+
+    /* Pipeline vertical */
+    .pipeline { display: flex; flex-direction: column; gap: 5px; }
+    .pipe-step {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: var(--tf-card); border-radius: 8px;
+      padding: clamp(6px,1vw,10px) clamp(8px,1.2vw,14px);
+      font-size: clamp(0.58rem, 1vw, 0.75rem); text-align: left;
+    }
+    .pipe-icon { font-size: 1.4em; min-width: 26px; flex-shrink: 0; }
+    .pipe-step h5 { margin: 0; color: var(--tf-blue); font-size: 1em; font-weight: 700; }
+    .pipe-step p  { margin: 2px 0 0; color: #aaa; line-height: 1.4; }
+
+    /* Resource tags */
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 0.5em 0; }
+    .tag {
+      padding: 3px 12px; border-radius: 6px;
+      font-size: clamp(0.5rem, 0.9vw, 0.65rem);
+      font-weight: 600; font-family: 'Fira Code', monospace;
+    }
+    .t-orange { background: rgba(232,119,34,0.15); border: 1px solid var(--tf-orange); color: var(--tf-orange); }
+    .t-blue   { background: rgba(74,144,217,0.15);  border: 1px solid var(--tf-blue);   color: var(--tf-blue); }
+    .t-green  { background: rgba(96,192,96,0.15);   border: 1px solid var(--tf-green);  color: var(--tf-green); }
+    .t-purple { background: rgba(123,66,188,0.15);  border: 1px solid var(--tf-purple); color: var(--tf-purple2); }
+    .t-red    { background: rgba(248,113,113,0.15); border: 1px solid var(--tf-red);    color: var(--tf-red); }
+
+    /* Section header (portada de módulo) */
+    .mod-header {
+      background: linear-gradient(135deg, rgba(123,66,188,0.25), rgba(74,144,217,0.15));
+      border-radius: 14px;
+      padding: clamp(20px, 3vw, 36px) clamp(24px, 4vw, 48px);
+    }
+    .mod-num {
+      font-size: clamp(0.6rem, 1vw, 0.8rem);
+      color: var(--tf-purple2); letter-spacing: 3px; text-transform: uppercase;
+    }
+    .mod-header h2 { margin: 0.25em 0 0.15em; }
+    .mod-header p  { color: #9ca3af; margin: 0; }
+
+    /* Agenda grid */
+    .agenda-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: clamp(6px, 1vw, 10px); margin-top: 0.5em;
+    }
+    .ag-item {
+      background: rgba(123,66,188,0.1);
+      border-left: 3px solid var(--tf-purple);
+      padding: clamp(6px, 1vw, 10px) clamp(8px, 1.2vw, 14px);
+      border-radius: 0 8px 8px 0;
+      font-size: clamp(0.58rem, 1vw, 0.72rem);
+      text-align: left; line-height: 1.5;
+    }
+    .ag-num { color: var(--tf-purple2); font-weight: 700; }
+
+    /* Arch diagram */
+    .arch {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; flex-wrap: wrap;
+    }
+    .arch-box {
+      background: var(--tf-card); border: 1px solid var(--tf-border);
+      border-radius: 8px; padding: 8px 12px; text-align: center;
+      font-size: clamp(0.58rem, 1vw, 0.72rem);
+    }
+    .arch-box .ai { font-size: 1.8em; display: block; }
+    .arch-box.aws { border-color: var(--tf-orange); }
+    .arch-box.az  { border-color: var(--tf-blue); }
+    .arch-arrow { color: var(--tf-purple); font-size: 1.2em; }
+
+    /* Demo banner */
+    .demo-banner {
+      background: linear-gradient(90deg, var(--tf-purple), var(--tf-blue));
+      border-radius: 8px; padding: 8px 16px; margin-bottom: 0.5em;
+      font-size: clamp(0.6rem, 1vw, 0.75rem);
+      font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    }
+
+    /* Tabla */
+    .tf-table {
+      width: 100%; border-collapse: collapse;
+      font-size: clamp(0.58rem, 1vw, 0.72rem); text-align: left;
+    }
+    .tf-table th {
+      background: rgba(123,66,188,0.25);
+      padding: 8px 12px; border: 1px solid #444;
+    }
+    .tf-table td {
+      padding: 7px 12px; border: 1px solid #2a2a3a;
+    }
+    .tf-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    /* ══════════════════════════════════════
+       SLIDES ESPECIALES
+    ══════════════════════════════════════ */
+
+    /* Slide humor */
+    .humor-slide {
+      display: flex !important; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; gap: 0.3em;
+    }
+    .humor-slide .q {
+      font-size: clamp(1.4rem, 3.5vw, 2.8rem);
+      font-weight: 900; color: #fff; line-height: 1.2; text-align: center;
+    }
+    .humor-slide .hl { color: var(--tf-purple2); }
+    .humor-slide .emoji { font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1; }
+    .humor-slide img {
+      max-height: 42vh; border-radius: 14px;
+      box-shadow: 0 0 40px rgba(123,66,188,0.55);
+      margin-top: 0.3em;
+    }
+    .humor-slide .caption {
+      font-size: clamp(0.55rem, 0.9vw, 0.7rem);
+      color: #6b7280; margin-top: 0.2em;
+    }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ══════════════════════════════════════════
+     PORTADA
+══════════════════════════════════════════ -->
+<section data-background-gradient="linear-gradient(135deg,#0f0f1a 0%,#16213e 55%,#0f3460 100%)">
+  <div style="padding: 0.6em 0;">
+    <div style="font-size:clamp(2.5rem,5vw,4rem); line-height:1;">🏗️</div>
+    <h1 style="color:#fff; text-shadow:0 0 30px rgba(123,66,188,0.8); margin:0.2em 0 0.1em;">Terraform</h1>
+    <p style="color:var(--tf-purple2); font-size:clamp(0.8rem,1.6vw,1.1rem); font-weight:500; margin:0 0 0.6em;">
+      Infraestructura como Código — De cero a producción
+    </p>
+    <div class="badges">
+      <span class="badge badge-dev">👨‍💻 Desarrolladores</span>
+      <span class="badge badge-arch">🏛️ Arquitectos</span>
+      <span class="badge badge-pm">📋 Project Managers</span>
+      <span class="badge badge-mgr">👔 Gerentes</span>
+    </div>
+    <p style="color:#4b5563; font-size:clamp(0.5rem,0.9vw,0.65rem); margin-top:0.8em;">
+      Este portal fue desplegado con Terraform · Azure DevOps · AWS S3 + CloudFront
+    </p>
+  </div>
+  <aside class="notes">
+    Bienvenidos a todos. Hoy vamos a hablar de Terraform, pero no de forma teórica solamente.
+    Lo que están viendo ahora mismo — este portal, este dominio HTTPS, el CDN detrás —
+    fue desplegado hace unos minutos con dos comandos. Eso es exactamente de lo que vamos a hablar hoy.
+    Esta sesión está diseñada para todos: si eres developer vas a ver código real,
+    si eres arquitecto vas a ver decisiones de diseño, y si eres gerente vas a entender
+    por qué el equipo habla tanto de "Terraform" y qué problema resuelve.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     HUMOR 1 — LA PREGUNTA
+══════════════════════════════════════════ -->
+<section data-background-gradient="linear-gradient(135deg,#0f0f1a 0%,#16213e 55%,#0f3460 100%)">
+  <div class="humor-slide">
+    <p class="q">Para ustedes...</p>
+    <p class="q"><span class="hl">¿3 minutos</span> es mucho o poco?</p>
+    <div class="emoji">😈</div>
+  </div>
+  <aside class="notes">
+    Hagan una pausa. Pregúntenle a alguien del auditorio: ¿3 minutos es mucho o poco tiempo?
+    Esperen respuestas. Algunos dirán "poco", otros "depende".
+    Dejen que la pregunta quede en el aire... luego pasen al siguiente slide.
+    El efecto de sorpresa es lo que queremos lograr aquí.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     HUMOR 2 — EL REVEAL + MEME
+══════════════════════════════════════════ -->
+<section data-background-gradient="linear-gradient(135deg,#0f3460 0%,#16213e 55%,#0f0f1a 100%)">
+  <div class="humor-slide">
+    <p class="q">Nosotros en <span class="hl">3 minutos</span></p>
+    <p class="q">desplegamos este sitio con Terraform</p>
+    <div class="emoji">😏</div>
+    <img src="assets/img/nino-oxxo.gif" alt="Meme niño del Oxxo" />
+    <p class="caption">El niño del Oxxo — la cara que pone el equipo cuando alguien todavía hace clic a clic en la consola</p>
+  </div>
+  <aside class="notes">
+    Y así quedó la cara del equipo cuando alguien todavía propone hacer la infraestructura
+    a mano en la consola de AWS. 😏
+    En serio: lo que acaban de ver es real. Hace unos minutos ejecuté terraform plan y terraform apply,
+    y ese portal que están mirando fue creado desde cero en AWS en aproximadamente 3 minutos.
+    Eso es el poder de Terraform. Hoy van a entender exactamente cómo funciona.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     LO QUE ACABAN DE VER
+══════════════════════════════════════════ -->
+<section>
+  <h2>Lo que acaban de ver 👀</h2>
+  <div class="flow" style="margin:0.6em 0;">
+    <div class="flow-step"><span class="icon">📝</span>terraform init</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><span class="icon">🔍</span>terraform plan</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><span class="icon">🚀</span>terraform apply</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><span class="icon">🌐</span>Este portal</div>
+  </div>
+  <div class="card" style="text-align:center; margin:0.5em 0;">
+    <p style="font-size:clamp(0.75rem,1.3vw,0.95rem); color:var(--tf-purple2);">
+      <strong>El portal, el dominio HTTPS, el CDN, el bucket S3 —<br/>
+      todo fue creado por Terraform desde código, en ~3 minutos.</strong>
+    </p>
+  </div>
+  <div class="tags">
+    <span class="tag t-orange">aws_s3_bucket</span>
+    <span class="tag t-blue">aws_cloudfront_distribution</span>
+    <span class="tag t-green">aws_s3_bucket_policy</span>
+    <span class="tag t-purple">aws_cloudfront_origin_access_control</span>
+  </div>
+  <aside class="notes">
+    Señalen el flujo en pantalla: init, plan, apply, y el resultado es este portal.
+    Cada uno de esos tags de abajo es un recurso real en AWS que Terraform creó automáticamente.
+    El bucket S3 guarda los archivos. CloudFront los distribuye globalmente con HTTPS.
+    La bucket policy conecta los dos de forma segura. Todo desde código. Todo repetible.
+    Pregunten: ¿alguien tiene dudas sobre lo que acaba de pasar? Aprovechen para generar conversación.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     AGENDA
+══════════════════════════════════════════ -->
+<section>
+  <h2>Agenda del día</h2>
+  <div class="agenda-grid">
+    <div class="ag-item"><span class="ag-num">01</span> · Principiante &nbsp;·&nbsp; <strong>¿Qué es Terraform y la IaC?</strong><br/>Conceptos, historia, comparativas</div>
+    <div class="ag-item"><span class="ag-num">02</span> · Principiante &nbsp;·&nbsp; <strong>HCL — Los bloques básicos</strong><br/>Providers, resources, variables, outputs</div>
+    <div class="ag-item"><span class="ag-num">03</span> · Principiante &nbsp;·&nbsp; <strong>El ciclo de vida</strong><br/>init → plan → apply → destroy</div>
+    <div class="ag-item"><span class="ag-num">04</span> · Intermedio &nbsp;·&nbsp; <strong>State — memoria de Terraform</strong><br/>Qué es, dónde vive, cómo protegerlo</div>
+    <div class="ag-item"><span class="ag-num">05</span> · Intermedio &nbsp;·&nbsp; <strong>Variables y tfvars</strong><br/>Un código, múltiples ambientes</div>
+    <div class="ag-item"><span class="ag-num">06</span> · Intermedio &nbsp;·&nbsp; <strong>Módulos</strong><br/>Reutilización y estandarización</div>
+    <div class="ag-item"><span class="ag-num">07</span> · Real &nbsp;·&nbsp; <strong>Nuestro stack</strong><br/>Azure DevOps + S3 backend + AWS</div>
+    <div class="ag-item"><span class="ag-num">08</span> · Hands-on &nbsp;·&nbsp; <strong>Replica este portal</strong><br/>Paso a paso desde el repo</div>
+  </div>
+  <aside class="notes">
+    Recorran la agenda brevemente. Los módulos 01 al 03 son para todos — conceptos básicos accesibles.
+    Los módulos 04 al 06 son más técnicos, para devs y arquitectos.
+    El módulo 07 es el más valioso para el equipo: muestra exactamente cómo lo usamos nosotros con Azure DevOps.
+    El 08 es el hands-on: al final del día cada persona puede clonar el repo y tener su propio portal funcionando.
+    Mencionen que habrá espacio para preguntas al final de cada módulo.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     MÓDULO 1
+══════════════════════════════════════════ -->
+<section>
+  <div class="mod-header">
+    <div class="mod-num">Módulo 01 · Principiante</div>
+    <h2>¿Qué es Terraform?</h2>
+    <p>Infraestructura como Código (IaC)</p>
+  </div>
+  <aside class="notes">
+    Este módulo es para todos, incluyendo gerentes. No asuman conocimiento previo.
+    Comiencen con una pregunta al auditorio: ¿alguien ha creado un servidor en AWS manualmente?
+    ¿Cuánto tardaron? ¿Podrían repetir exactamente los mismos pasos? Esa respuesta lleva al problema que Terraform resuelve.
+  </aside>
+</section>
+
+<section>
+  <h3>El problema sin IaC</h3>
+  <div class="g2">
+    <div class="card card-bad">
+      <h4>❌ Antes (manual)</h4>
+      <ul>
+        <li>Clic a clic en la consola AWS</li>
+        <li>Pasos documentados en Word</li>
+        <li>Nadie sabe qué creó quién</li>
+        <li>Imposible de reproducir exacto</li>
+        <li>Sin historial de cambios</li>
+        <li>Dev ≠ Staging ≠ Producción</li>
+      </ul>
+    </div>
+    <div class="card card-good">
+      <h4>✅ Con IaC (Terraform)</h4>
+      <ul>
+        <li>Infraestructura definida en código</li>
+        <li>Versionada en Git</li>
+        <li>Revisada en Pull Requests</li>
+        <li>Reproducible siempre</li>
+        <li>Historial completo de cambios</li>
+        <li>Dev = Staging = Producción</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">
+    Aquí pueden contar una anécdota real del equipo si tienen una: "¿recuerdan cuando X pasó a producción
+    y el ambiente era diferente al de staging?" Ese es el problema del lado izquierdo.
+    Para los gerentes: el lado derecho significa menos incidentes nocturnos, menos tiempo de onboarding
+    para nuevos devs, y ambientes predecibles. El código de infraestructura se revisa igual que el código
+    de la aplicación — eso es control y trazabilidad.
+  </aside>
+</section>
+
+<section>
+  <h3>¿Qué es Terraform?</h3>
+  <div style="display:flex; flex-direction:column; gap:0.5em;">
+    <div class="card">
+      <h4>📖 Definición</h4>
+      <p>Herramienta open-source de <strong>HashiCorp</strong> que permite definir, provisionar y gestionar infraestructura en la nube usando un lenguaje declarativo: <strong>HCL</strong> (HashiCorp Configuration Language).</p>
+    </div>
+    <div class="card">
+      <h4>🎯 Declarativo vs Imperativo</h4>
+      <p><strong style="color:var(--tf-red);">Imperativo:</strong> <em>"Crea el servidor, configura el puerto 80, agrega el certificado..."</em><br/>
+      <strong style="color:#4ade80;">Declarativo:</strong> <em>"Quiero un servidor web con SSL activado."</em> — Terraform decide el cómo.</p>
+    </div>
+    <div class="card">
+      <h4>☁️ Multi-cloud</h4>
+      <p>Un solo lenguaje para AWS, Azure, GCP, Kubernetes, Datadog, GitHub y más de <strong>3,000 providers</strong>.</p>
+    </div>
+  </div>
+  <aside class="notes">
+    La analogía que funciona bien con gerentes: Terraform es como un arquitecto que tiene un plano.
+    El plano dice qué debe existir. Terraform compara ese plano con la realidad y construye solo lo que falta.
+    Si cambian el plano, Terraform sabe exactamente qué demoler, qué construir y qué dejar igual.
+    Para los devs: piensen en Docker Compose pero para infraestructura cloud. Declaran el estado deseado y Terraform lo lleva allá.
+    Dato importante: HashiCorp fue adquirida por IBM en 2024, pero Terraform sigue siendo la herramienta estándar de la industria.
+    OpenTofu es el fork open-source si en el futuro hay cambios de licencia.
+  </aside>
+</section>
+
+<section>
+  <h3>Terraform vs otras herramientas</h3>
+  <table class="tf-table" style="margin-top:0.5em;">
+    <thead>
+      <tr>
+        <th>Herramienta</th><th>Tipo</th><th>Alcance</th><th>Curva de aprendizaje</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong style="color:var(--tf-orange);">Terraform</strong></td><td>Declarativo</td><td>Multi-cloud</td><td>Media ⭐</td></tr>
+      <tr><td>CloudFormation</td><td>Declarativo</td><td>Solo AWS</td><td>Alta</td></tr>
+      <tr><td>Ansible</td><td>Imperativo</td><td>Config Mgmt</td><td>Media</td></tr>
+      <tr><td>Pulumi</td><td>Imperativo (código)</td><td>Multi-cloud</td><td>Media</td></tr>
+      <tr><td>ARM Templates</td><td>Declarativo</td><td>Solo Azure</td><td>Alta</td></tr>
+    </tbody>
+  </table>
+  <aside class="notes">
+    La pregunta que siempre surge: ¿por qué Terraform y no CloudFormation si ya usamos AWS?
+    Respuesta: porque el día que quieran tocar algo en Azure, o usar un proveedor de DNS, o gestionar GitHub,
+    Terraform ya lo cubre. No están atados a un solo cloud.
+    Ansible es complementario — Terraform crea la infraestructura, Ansible configura lo que hay dentro.
+    Pulumi es interesante para equipos que quieren escribir infraestructura en TypeScript o Python,
+    pero la comunidad y el ecosistema de Terraform son mucho mayores hoy en día.
+    Pregunta dinámica: ¿alguien del equipo ya usó alguna de estas herramientas?
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     MÓDULO 2 — HCL
+══════════════════════════════════════════ -->
+<section>
+  <div class="mod-header">
+    <div class="mod-num">Módulo 02 · Principiante</div>
+    <h2>HCL — El lenguaje de Terraform</h2>
+    <p>Providers · Resources · Variables · Outputs</p>
+  </div>
+  <aside class="notes">
+    HCL no es un lenguaje de programación completo. Es un lenguaje de configuración — muy legible,
+    parecido a JSON pero más amigable. Si alguien del auditorio sabe leer un archivo de configuración,
+    va a entender HCL en minutos. Antes de pasar a los bloques, muestren la estructura del proyecto —
+    eso da contexto de dónde vive cada cosa.
+  </aside>
+</section>
+
+<section>
+  <h3>Estructura del proyecto</h3>
+  <div class="g2" style="margin-top:0.4em;">
+    <div>
+      <p style="color:var(--tf-purple2); font-weight:700; font-size:clamp(0.65rem,1.1vw,0.8rem); margin:0 0 4px;">📁 Archivos mínimos</p>
+      <pre><code class="language-bash">mi-proyecto/
+├── providers.tf    # Configura el cloud
+├── main.tf         # Recursos principales
+├── variables.tf    # Definición de vars
+├── outputs.tf      # Qué muestra al final
+└── terraform.tfvars # Valores por ambiente</code></pre>
+    </div>
+    <div>
+      <p style="color:var(--tf-purple2); font-weight:700; font-size:clamp(0.65rem,1.1vw,0.8rem); margin:0 0 4px;">📁 Proyecto real (este)</p>
+      <pre><code class="language-bash">terraform-capacitacion/
+├── backend.tf       # Remote state (comentado)
+├── providers.tf     # AWS + profile
+├── main.tf          # S3 + CloudFront
+├── variables.tf     # Variables tipadas
+├── outputs.tf       # URL del portal
+├── terraform.tfvars # Valores de la demo
+└── web/             # Archivos del portal</code></pre>
+    </div>
+  </div>
+  <aside class="notes">
+    Muestren el repositorio real en Azure DevOps o el directorio local en la terminal.
+    La idea es que la audiencia vea que no hay magia: son archivos de texto planos.
+    El de la izquierda es el mínimo para empezar. El de la derecha es el proyecto que desplegamos hoy.
+    Señalen: backend.tf está comentado porque en la demo usamos state local — luego en el módulo de state
+    explicamos por qué en producción lo tenemos habilitado con S3.
+  </aside>
+</section>
+
+<section>
+  <h3>Bloque: <code>provider</code></h3>
+  <p style="color:#9ca3af; font-size:clamp(0.6rem,1vw,0.75rem); margin:0 0 0.3em;">Le dice a Terraform con qué nube hablar y cómo autenticarse</p>
+  <div class="code-label">providers.tf</div>
+  <pre><code class="language-hcl">terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"    # Al menos 5.x, no 6.x
+    }
+  }
+}
+
+provider "aws" {
+  region  = var.aws_region   # Variable — no hardcodeado
+  profile = "hackaton-aws"   # Perfil del ~/.aws/credentials
+}</code></pre>
+  <div class="card" style="margin-top:0.4em;">
+    <h4>💡 terraform init</h4>
+    <p>Descarga el provider de AWS (como <code>npm install</code>) y lo guarda en <code>.terraform/</code>. Siempre es el primer comando.</p>
+  </div>
+  <aside class="notes">
+    Analogía para todos: el bloque terraform es como el package.json — dice qué versiones necesita.
+    El bloque provider es como configurar la conexión a la base de datos — le dice a Terraform
+    en qué región de AWS trabajar y con qué credenciales.
+    Importante señalar: "profile = hackaton-aws" — eso apunta al archivo ~/.aws/credentials
+    de la máquina local. En el pipeline de Azure DevOps esto se reemplaza por variables de entorno secretas.
+    La versión "~> 5.0" significa: cualquier versión 5.x pero no 6.x. Así evitan sorpresas.
+  </aside>
+</section>
+
+<section>
+  <h3>Bloque: <code>resource</code></h3>
+  <p style="color:#9ca3af; font-size:clamp(0.6rem,1vw,0.75rem); margin:0 0 0.3em;">La unidad básica — cada recurso de infraestructura que Terraform gestiona</p>
+  <div class="code-label">main.tf</div>
+  <pre><code class="language-hcl"># Sintaxis:  resource "TIPO"  "NOMBRE_LOCAL"  { ... }
+#                     └─────────────┘  └──────────┘
+#                     provider+recurso  tu etiqueta
+
+resource "aws_s3_bucket" "portal" {
+  bucket        = "mi-portal-terraform-demo"
+  force_destroy = true
+  tags = { Environment = "demo", ManagedBy = "terraform" }
+}
+
+# Referenciar otro recurso:  TIPO.NOMBRE.ATRIBUTO
+resource "aws_s3_bucket_versioning" "portal" {
+  bucket = aws_s3_bucket.portal.id   # ← referencia al bucket
+  versioning_configuration { status = "Enabled" }
+}</code></pre>
+  <aside class="notes">
+    El bloque resource es el más importante — aquí vive la infraestructura real.
+    Señalen la sintaxis: "aws_s3_bucket" viene del provider de AWS, "portal" es el nombre que ustedes le dan.
+    Ese nombre solo existe dentro del código de Terraform.
+    La referencia aws_s3_bucket.portal.id es poderosa: Terraform sabe que el versioning
+    depende del bucket y lo crea en el orden correcto automáticamente. No hay que gestionar dependencias manualmente.
+    Pregunta para devs: ¿qué pasa si el bucket ya existe? Terraform lo detecta y hace un update, no un replace.
+    A menos que sea un cambio que obligue a recrear — en ese caso el plan lo dice claramente con "-/+".
+  </aside>
+</section>
+
+<section>
+  <h3>Bloques: <code>variable</code> y <code>output</code></h3>
+  <div class="g2">
+    <div>
+      <div class="code-label">variables.tf</div>
+      <pre><code class="language-hcl">variable "aws_region" {
+  type    = string
+  default = "us-east-1"
+}
+
+variable "environment" {
+  type = string
+  validation {
+    condition = contains(
+      ["dev","staging","prod"],
+      var.environment)
+    error_message = "Solo dev/staging/prod"
+  }
+}</code></pre>
+      <div class="code-label" style="margin-top:6px;">terraform.tfvars</div>
+      <pre><code class="language-hcl">aws_region  = "us-east-1"
+environment = "demo"
+portal_bucket_name = "mi-portal"</code></pre>
+    </div>
+    <div>
+      <div class="code-label">outputs.tf</div>
+      <pre><code class="language-hcl">output "portal_url" {
+  description = "URL del portal"
+  value = "https://${
+    aws_cloudfront_distribution
+    .portal.domain_name
+  }"
+}
+
+# sensitive oculta en logs
+output "db_password" {
+  value     = random_password.db.result
+  sensitive = true
+}</code></pre>
+      <div class="card" style="margin-top:6px;">
+        <p><code>terraform output</code> — todos<br/>
+        <code>terraform output portal_url</code> — uno</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    Las variables son la clave para reutilizar el mismo código en múltiples ambientes.
+    Noten el bloque validation: Terraform valida los valores antes de hacer cualquier cambio en AWS.
+    Si alguien escribe environment = "produccion" en vez de "prod", el error aparece localmente, no en AWS.
+    El tfvars es el archivo donde ponen los valores reales. Tienen uno por ambiente: dev, staging, prod.
+    Los outputs son lo que ven al final del apply — en la demo vieron la URL del portal aparecer automáticamente.
+    Eso es un output. También sirven para conectar módulos entre sí.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     MÓDULO 3 — CICLO DE VIDA
+══════════════════════════════════════════ -->
+<section>
+  <div class="mod-header">
+    <div class="mod-num">Módulo 03 · Principiante</div>
+    <h2>El ciclo de vida</h2>
+    <p>init · plan · apply · destroy</p>
+  </div>
+  <aside class="notes">
+    Este módulo es muy práctico. Si tienen una terminal abierta, es buen momento para mostrar
+    los comandos en vivo y que la audiencia vea la salida real. Cuatro comandos, cuatro conceptos.
+    Al terminar este módulo, cualquier persona debería poder clonar el repo y desplegar.
+  </aside>
+</section>
+
+<section>
+  <h3>Los 4 comandos esenciales</h3>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-icon">📦</div>
+      <div><h5>terraform init</h5>
+      <p>Descarga providers y módulos. Inicializa el backend. <strong style="color:var(--tf-green);">Siempre primero. Seguro de repetir.</strong></p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🔍</div>
+      <div><h5>terraform plan</h5>
+      <p>Compara el state con el código. Muestra qué se creará, modificará o destruirá. <strong style="color:var(--tf-green);">Solo lectura — no hace cambios.</strong></p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🚀</div>
+      <div><h5>terraform apply</h5>
+      <p>Ejecuta el plan y aplica los cambios en la infraestructura real. <strong style="color:var(--tf-orange);">Pide confirmación. En CI/CD: -auto-approve.</strong></p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">💥</div>
+      <div><h5>terraform destroy</h5>
+      <p>Elimina todos los recursos gestionados. <strong style="color:var(--tf-red);">¡Irreversible! Solo en demos o ambientes efímeros.</strong></p></div>
+    </div>
+  </div>
+  <aside class="notes">
+    Init: solo se ejecuta una vez al clonar el repo, o cuando cambia el backend.
+    Plan: este es el comando más valioso en producción. Nunca apliquen sin ver el plan primero.
+    Una buena práctica: el plan se guarda como artefacto en el pipeline y se adjunta al PR como comentario.
+    Apply: en local piden confirmación escribiendo "yes". En el pipeline usan -auto-approve,
+    pero solo después de que alguien aprobó el PR y revisó el plan.
+    Destroy: úsenlo al final de esta demo para limpiar. En producción, hay recursos con deletion_protection
+    habilitado (RDS, por ejemplo) que Terraform no puede destruir sin deshabilitarlo primero.
+  </aside>
+</section>
+
+<section>
+  <h3>El plan en detalle</h3>
+  <p style="color:#9ca3af; font-size:clamp(0.6rem,1vw,0.72rem); margin:0 0 0.3em;">Esto es exactamente lo que vieron al inicio de la sesión</p>
+  <pre><code class="language-bash">$ terraform plan
+
+  # aws_s3_bucket.portal will be created
+  + resource "aws_s3_bucket" "portal" {
+      + bucket        = "terraform-capacitacion-portal-demo"
+      + force_destroy = true
+      + id            = (known after apply)
+    }
+
+  # aws_cloudfront_distribution.portal will be created
+  + resource "aws_cloudfront_distribution" "portal" {
+      + domain_name = (known after apply)
+      + enabled     = true
+    }
+
+Plan: 8 to add, 0 to change, 0 to destroy.
+#      └──────┘  └──────────┘  └──────────┘
+#      Nuevos    Modificados    Eliminados</code></pre>
+  <div class="tags">
+    <span class="tag t-green">+ crear</span>
+    <span class="tag t-orange">~ modificar</span>
+    <span class="tag t-red">- destruir</span>
+  </div>
+  <aside class="notes">
+    Señalen el "known after apply" — algunos valores como el ID o el dominio de CloudFront
+    no existen hasta que el recurso se crea. Terraform lo sabe y lo indica claramente.
+    El resumen final "8 to add, 0 to change, 0 to destroy" es lo primero que deben leer en cualquier plan.
+    Si ven un número inesperado en "destroy", paren y revisen antes de continuar.
+    Actividad dinámica: pídanle a alguien del auditorio que lea el plan de pantalla y explique
+    qué cree que va a pasar. Casi siempre aciertan — eso demuestra que HCL es legible.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     MÓDULO 4 — STATE
+══════════════════════════════════════════ -->
+<section>
+  <div class="mod-header">
+    <div class="mod-num">Módulo 04 · Intermedio</div>
+    <h2>El State — memoria de Terraform</h2>
+    <p>¿Qué creé? ¿Qué cambió? ¿Qué debo destruir?</p>
+  </div>
+  <aside class="notes">
+    El State es el concepto más importante de Terraform y el que más dolores de cabeza causa
+    cuando no se entiende bien. Vale la pena tomarse el tiempo aquí.
+    Comiencen con la pregunta: si Terraform no tiene estado, ¿cómo sabría si ya creó el bucket o no?
+    Esa pregunta lleva directamente a entender por qué existe el tfstate.
+  </aside>
+</section>
+
+<section>
+  <h3>¿Qué es el State?</h3>
+  <div class="card" style="margin-bottom:0.5em;">
+    <h4>📋 terraform.tfstate</h4>
+    <p>Archivo JSON que Terraform mantiene para saber exactamente qué recursos creó, con qué configuración y con qué IDs en el cloud. Sin el state, Terraform no sabe qué existe.</p>
+  </div>
+  <div class="g2">
+    <div class="card card-bad">
+      <h4>❌ State local (default)</h4>
+      <ul>
+        <li>Vive solo en tu máquina</li>
+        <li>El equipo no puede usarlo</li>
+        <li>Sin lock → conflictos</li>
+        <li>Se pierde si borras la carpeta</li>
+        <li>Secretos en texto plano</li>
+      </ul>
+    </div>
+    <div class="card card-good">
+      <h4>✅ State remoto (S3)</h4>
+      <ul>
+        <li>En S3 — accesible por el equipo</li>
+        <li>Lock con DynamoDB → sin conflictos</li>
+        <li>Versionado — historial completo</li>
+        <li>Cifrado en reposo (AES-256)</li>
+        <li>El pipeline CI/CD lo usa igual</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">
+    Muéstrenle el archivo terraform.tfstate del proyecto en la terminal: cat terraform.tfstate | head -50
+    La audiencia verá que es JSON puro con los IDs reales de AWS. Eso es lo que Terraform usa para saber qué existe.
+    Escenario de pesadilla con state local: el developer que tenía el tfstate en su laptop sale de vacaciones
+    y nadie más puede hacer un terraform apply porque el state está en su máquina.
+    Con S3: el state vive en la nube, el pipeline lo lee y escribe, y DynamoDB asegura que solo
+    un proceso lo modifica a la vez. Si alguien está haciendo apply en su máquina y el pipeline
+    también intenta aplicar, DynamoDB bloquea al segundo. Sin ese lock podrían tener state corrupto.
+  </aside>
+</section>
+
+<section>
+  <h3>Remote State en S3 — nuestro backend.tf</h3>
+  <div class="code-label">backend.tf</div>
+  <pre><code class="language-hcl">terraform {
+  backend "s3" {
+    bucket         = "terraform-capacitacion-state"
+    key            = "capacitacion/portal/terraform.tfstate"
+    region         = "us-east-1"
+    profile        = "hackaton-aws"
+    dynamodb_table = "terraform-capacitacion-lock"  # lock
+    encrypt        = true
+  }
+}</code></pre>
+  <div class="flow" style="margin-top:0.6em;">
+    <div class="flow-step"><span class="icon">💻</span>Pipeline<br/>apply</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><span class="icon">🔒</span>DynamoDB<br/>Lock</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><span class="icon">🪣</span>S3<br/>State</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><span class="icon">🔓</span>DynamoDB<br/>Unlock</div>
+  </div>
+  <aside class="notes">
+    La key es como la ruta del archivo dentro del bucket. Pueden tener múltiples proyectos
+    en el mismo bucket usando keys diferentes: "proyecto-a/prod/terraform.tfstate", "proyecto-b/dev/terraform.tfstate".
+    El campo encrypt=true es obligatorio en producción — el tfstate puede contener passwords, tokens y ARNs sensibles.
+    En la demo de hoy ese backend.tf está comentado y usamos state local para simplificar.
+    En el repo de Azure DevOps de producción está habilitado. Señalen esa diferencia.
+    Pregunta para arquitectos: ¿cuándo tendría sentido tener un bucket de state separado por proyecto
+    vs. uno compartido con keys diferentes? (respuesta: depende del nivel de aislamiento de permisos que necesiten)
+  </aside>
+</section>
+
+<section>
+  <h3>Comandos útiles del State</h3>
+  <pre><code class="language-bash"># Ver qué recursos gestiona Terraform
+terraform state list
+
+# Ver detalles de un recurso
+terraform state show aws_s3_bucket.portal
+
+# Mover recurso (renombrado en el código)
+terraform state mv aws_s3_bucket.old aws_s3_bucket.new
+
+# Importar recurso existente al state
+terraform import aws_s3_bucket.portal mi-bucket-existente
+
+# Sacar un recurso del state SIN destruirlo en AWS
+terraform state rm aws_s3_bucket.portal</code></pre>
+  <div class="card" style="margin-top:0.4em; border-color:rgba(248,113,113,0.4);">
+    <h4 style="color:var(--tf-red);">⚠️ Regla de oro</h4>
+    <p>Nunca edites <code>terraform.tfstate</code> manualmente. Usa siempre los comandos <code>terraform state</code>.</p>
+  </div>
+  <aside class="notes">
+    terraform state list es el comando de diagnóstico más útil. Muéstrenlo en la terminal en vivo.
+    terraform import es clave cuando el equipo tiene recursos creados manualmente antes de adoptar Terraform.
+    Proceso típico: importar el recurso, luego escribir el código HCL que lo describe,
+    luego hacer plan para verificar que no hay drift.
+    terraform state rm es útil cuando quieren dejar de gestionar un recurso con Terraform sin destruirlo.
+    Por ejemplo, si mueven un recurso a otro proyecto de Terraform.
+    Escenario real para mencionar: "hemos usado terraform state mv cuando renombramos un módulo
+    y el plan mostraba destroy + create. Con el mv evitamos destruir el recurso en producción."
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     MÓDULO 5 — VARIABLES Y TFVARS
+══════════════════════════════════════════ -->
+<section>
+  <div class="mod-header">
+    <div class="mod-num">Módulo 05 · Intermedio</div>
+    <h2>Variables y tfvars</h2>
+    <p>Un código, múltiples ambientes</p>
+  </div>
+  <aside class="notes">
+    Este módulo responde una pregunta frecuente: ¿cómo usamos el mismo código de Terraform
+    para dev, staging y producción sin duplicar nada?
+    La respuesta son los archivos tfvars. Un código, múltiples configuraciones.
+  </aside>
+</section>
+
+<section>
+  <h3>El patrón de ambientes con tfvars</h3>
+  <div class="g3">
+    <div>
+      <div class="code-label">dev.tfvars</div>
+      <pre><code class="language-hcl">environment = "dev"
+aws_region  = "us-east-1"
+portal_bucket_name =
+  "mi-portal-dev"
+cloudfront_price_class =
+  "PriceClass_100"
+tags = {
+  Environment = "dev"
+}</code></pre>
+    </div>
+    <div>
+      <div class="code-label">staging.tfvars</div>
+      <pre><code class="language-hcl">environment = "staging"
+aws_region  = "us-east-1"
+portal_bucket_name =
+  "mi-portal-staging"
+cloudfront_price_class =
+  "PriceClass_100"
+tags = {
+  Environment = "staging"
+}</code></pre>
+    </div>
+    <div>
+      <div class="code-label">prod.tfvars</div>
+      <pre><code class="language-hcl">environment = "prod"
+aws_region  = "us-east-1"
+portal_bucket_name =
+  "mi-portal-prod"
+cloudfront_price_class =
+  "PriceClass_All"
+tags = {
+  Environment = "prod"
+}</code></pre>
+    </div>
+  </div>
+  <div class="card" style="margin-top:0.5em;">
+    <p><code>terraform apply -var-file="dev.tfvars"</code> &nbsp;&nbsp; <code>terraform apply -var-file="prod.tfvars"</code></p>
+  </div>
+  <aside class="notes">
+    Señalen la diferencia entre dev/staging y prod: el PriceClass de CloudFront.
+    En dev usan PriceClass_100 (solo USA/Europa, más barato). En prod usan PriceClass_All (global).
+    Eso es exactamente el tipo de decisión que se maneja en tfvars: misma infraestructura, diferente configuración.
+    En el pipeline de Azure DevOps, el nombre del archivo tfvars se deriva automáticamente del nombre del branch:
+    main → prod.tfvars, develop → dev.tfvars. Muestren eso en el slide del pipeline del módulo 07.
+    Pregunta para el equipo: ¿qué otras diferencias tienen entre ambientes actualmente?
+    Eso abre conversación sobre qué más podría configurarse via tfvars.
+  </aside>
+</section>
+
+<section>
+  <h3>Jerarquía de variables</h3>
+  <p style="color:#9ca3af; font-size:clamp(0.6rem,1vw,0.72rem); margin:0 0 0.4em;">Mayor número = mayor precedencia (sobreescribe los anteriores)</p>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-icon" style="color:#555;">1</div>
+      <div><h5 style="color:#6b7280;">default en variables.tf</h5>
+      <p>Valor por defecto si no se pasa ningún otro valor.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon" style="color:#60b0f0;">2</div>
+      <div><h5>terraform.tfvars</h5>
+      <p>Se carga automáticamente si existe en el directorio de trabajo.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon" style="color:var(--tf-purple2);">3</div>
+      <div><h5>-var-file="prod.tfvars"</h5>
+      <p>Archivo tfvars específico pasado en el comando.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon" style="color:var(--tf-orange);">4</div>
+      <div><h5>Variable de entorno TF_VAR_nombre</h5>
+      <p><code>export TF_VAR_aws_region="us-west-2"</code> — muy útil en CI/CD para secretos.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon" style="color:#4ade80;">5</div>
+      <div><h5 style="color:#4ade80;">-var="nombre=valor" en el comando</h5>
+      <p>Máxima precedencia. Sobreescribe todo. <code>terraform apply -var="environment=prod"</code></p></div>
+    </div>
+  </div>
+  <aside class="notes">
+    Este orden de precedencia evita muchos bugs. El caso más común de confusión:
+    "tengo dev.tfvars pero también tengo un terraform.tfvars y no sé cuál aplica."
+    Respuesta: el -var-file="dev.tfvars" tiene precedencia sobre terraform.tfvars para las mismas variables.
+    Las variables de entorno TF_VAR_ son las que usamos en el pipeline para pasar secretos
+    que no deben estar en ningún archivo del repositorio: passwords de base de datos, tokens de API.
+    El nivel 5 es útil para overrides rápidos en debugging local, pero no en pipelines de producción.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     MÓDULO 6 — MÓDULOS
+══════════════════════════════════════════ -->
+<section>
+  <div class="mod-header">
+    <div class="mod-num">Módulo 06 · Intermedio</div>
+    <h2>Módulos</h2>
+    <p>Reutilización y estandarización de infraestructura</p>
+  </div>
+  <aside class="notes">
+    Los módulos son el paso hacia la madurez en Terraform. Un equipo que empieza bien
+    escribe todo en main.tf. Un equipo que escala usa módulos para que la infraestructura común
+    sea consistente en todos los proyectos. Piensen en módulos como las librerías del equipo.
+  </aside>
+</section>
+
+<section>
+  <h3>¿Qué es un módulo?</h3>
+  <div class="card" style="margin-bottom:0.5em;">
+    <h4>📦 Módulo = carpeta de Terraform</h4>
+    <p>Todo directorio con archivos <code>.tf</code> es un módulo. Permite empaquetar infraestructura reutilizable — igual que una función en programación.</p>
+  </div>
+  <div class="g2">
+    <div>
+      <p style="color:var(--tf-red); font-weight:700; font-size:clamp(0.65rem,1.1vw,0.8rem); margin:0 0 4px;">📁 Sin módulos (caos)</p>
+      <pre><code class="language-bash">proyecto/
+├── main.tf  # 800+ líneas
+└── ...      # todo mezclado</code></pre>
+    </div>
+    <div>
+      <p style="color:#4ade80; font-weight:700; font-size:clamp(0.65rem,1.1vw,0.8rem); margin:0 0 4px;">📁 Con módulos (orden)</p>
+      <pre><code class="language-bash">proyecto/
+├── main.tf             # orquestador
+└── modules/
+    ├── networking/     # VPC, subnets
+    ├── compute/        # EC2, ASG
+    ├── storage/        # S3, RDS
+    └── cdn/            # CloudFront</code></pre>
+    </div>
+  </div>
+  <aside class="notes">
+    Analogía práctica: imaginen que cada proyecto necesita una VPC con sus subnets públicas y privadas.
+    Sin módulos, copian y pegan ese bloque de código en cada proyecto. Con módulos, llaman module "vpc"
+    y pasan los parámetros. Si el equipo de seguridad dice "todas las VPCs deben tener flow logs",
+    lo cambian en el módulo y todos los proyectos lo adoptan al próximo apply.
+    También pueden usar módulos del Terraform Registry — hay módulos oficiales de AWS muy bien mantenidos.
+    Ejemplo: module "vpc" from terraform-aws-modules/vpc/aws — no tienen que escribir la VPC desde cero.
+  </aside>
+</section>
+
+<section>
+  <h3>Llamar un módulo</h3>
+  <div class="g2">
+    <div>
+      <div class="code-label">modules/cdn/main.tf</div>
+      <pre><code class="language-hcl">variable "bucket_name" { type = string }
+variable "environment"  { type = string }
+
+resource "aws_cloudfront_distribution" "this" {
+  # ... configuración
+}
+
+output "domain_name" {
+  value = aws_cloudfront_distribution
+          .this.domain_name
+}</code></pre>
+    </div>
+    <div>
+      <div class="code-label">main.tf (raíz)</div>
+      <pre><code class="language-hcl">module "portal_cdn" {
+  source = "./modules/cdn"
+
+  # Variables al módulo
+  bucket_name = var.portal_bucket_name
+  environment = var.environment
+}
+
+# Output del módulo
+output "portal_url" {
+  value = "https://${
+    module.portal_cdn.domain_name
+  }"
+}</code></pre>
+    </div>
+  </div>
+  <aside class="notes">
+    Noten que el módulo tiene sus propias variables, recursos y outputs — es completamente autocontenido.
+    El main.tf raíz es el orquestador: llama módulos y conecta sus outputs.
+    El source puede ser una ruta local ./modules/cdn, un repositorio Git, o el Terraform Registry.
+    Después de agregar o cambiar un módulo, hay que correr terraform init de nuevo para que Terraform
+    descargue o actualice el módulo.
+    Un patrón muy útil en equipos: tener un repositorio separado solo de módulos internos,
+    y los proyectos los llaman via Git. Así el equipo de plataforma mantiene los estándares centralizados.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     MÓDULO 7 — STACK REAL
+══════════════════════════════════════════ -->
+<section>
+  <div class="mod-header">
+    <div class="mod-num">Módulo 07 · Nuestro stack real</div>
+    <h2>Azure DevOps + AWS</h2>
+    <p>Así usamos Terraform en producción</p>
+  </div>
+  <aside class="notes">
+    Este es el módulo más valioso de la capacitación. Aquí conectamos todo lo aprendido
+    con la realidad del equipo. No es teoría — es exactamente lo que tienen en producción.
+    Tómense el tiempo de mostrar el repositorio real en Azure DevOps mientras navegan estos slides.
+  </aside>
+</section>
+
+<section>
+  <h3>Arquitectura completa</h3>
+  <div class="arch" style="margin:0.6em 0;">
+    <div class="arch-box az">
+      <span class="ai">📁</span>
+      <strong>Azure DevOps</strong><br/>Repositorio Git<br/><small style="color:#aaa;">.tf + tfvars</small>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box az">
+      <span class="ai">⚙️</span>
+      <strong>Azure Pipeline</strong><br/>CI/CD<br/><small style="color:#aaa;">plan → apply</small>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <div class="arch-box aws"><span class="ai">🪣</span><strong>S3 State</strong><br/><small style="color:#aaa;">tfstate</small></div>
+      <div class="arch-box aws"><span class="ai">🔒</span><strong>DynamoDB</strong><br/><small style="color:#aaa;">state lock</small></div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box aws">
+      <span class="ai">☁️</span>
+      <strong>AWS Resources</strong><br/>S3 · CloudFront<br/>EC2 · RDS · etc.<br/><small style="color:#aaa;">definidos en tfvars</small>
+    </div>
+  </div>
+  <div class="card">
+    <h4>🔑 Credenciales AWS en el pipeline</h4>
+    <p>Se configuran como <strong>Service Connections</strong> o <strong>variables secretas</strong> en Azure DevOps. Nunca están en el código ni en el repositorio.</p>
+  </div>
+  <aside class="notes">
+    Recorran el diagrama de izquierda a derecha.
+    El código vive en Azure DevOps — eso es el repositorio que ya conocen.
+    El pipeline lee ese código y ejecuta terraform plan y apply contra AWS.
+    El state vive en S3, no en la máquina de nadie ni en Azure DevOps.
+    Los recursos reales (lo que pagan en AWS) se definen en los tfvars del repositorio.
+    Lo importante para gerentes: todo cambio en infraestructura pasa por un Pull Request,
+    tiene una revisión, y queda registrado en el historial de Git. Trazabilidad total.
+  </aside>
+</section>
+
+<section>
+  <h3>Estructura del repositorio</h3>
+  <pre><code class="language-bash">📁 repositorio-azure-devops/
+├── 📄 azure-pipelines.yml       # Pipeline CI/CD
+├── 📄 backend.tf                 # Remote state en S3
+├── 📄 providers.tf               # AWS provider
+├── 📄 main.tf                    # Recursos
+├── 📄 variables.tf               # Variables tipadas
+├── 📄 outputs.tf                 # URLs y datos
+├── 📁 environments/              # tfvars por ambiente
+│   ├── 📄 dev.tfvars
+│   ├── 📄 staging.tfvars
+│   └── 📄 prod.tfvars
+└── 📁 modules/                   # Módulos reutilizables
+    ├── 📁 networking/
+    ├── 📁 compute/
+    └── 📁 storage/</code></pre>
+  <aside class="notes">
+    Abran el repositorio real en Azure DevOps en el navegador y muestren esta estructura en vivo.
+    El azure-pipelines.yml es el corazón del CI/CD — lo vemos en el siguiente slide.
+    La carpeta environments/ tiene un tfvars por ambiente. El pipeline selecciona cuál usar
+    según el branch: develop → dev.tfvars, main → prod.tfvars.
+    Los módulos en la carpeta modules/ son los que el equipo ha estandarizado.
+    Si alguien pregunta dónde está el backend.tf del proyecto — apunten al repositorio real.
+  </aside>
+</section>
+
+<section>
+  <h3>Pipeline de Azure DevOps</h3>
+  <div class="code-label">azure-pipelines.yml</div>
+  <pre><code class="language-yaml">trigger:
+  branches: { include: [main, develop] }
+
+variables:
+  TF_VAR_FILE: environments/$(Build.SourceBranchName).tfvars
+
+stages:
+  - stage: Plan
+    jobs:
+      - job: TerraformPlan
+        steps:
+          - task: TerraformInstaller@1
+            inputs: { terraformVersion: "1.9.0" }
+          - script: terraform init
+            env:
+              AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+              AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+          - script: terraform plan -var-file=$(TF_VAR_FILE) -out=tfplan
+          - publish: tfplan
+
+  - stage: Apply
+    dependsOn: Plan
+    condition: eq(variables['Build.SourceBranch'],'refs/heads/main')
+    jobs:
+      - deployment: TerraformApply
+        environment: production       # requiere aprobación manual
+        steps:
+          - download: current
+          - script: terraform apply tfplan</code></pre>
+  <aside class="notes">
+    Señalen la línea TF_VAR_FILE: automáticamente usa el nombre del branch como nombre del tfvars.
+    El stage Plan corre en todos los branches — así en cualquier PR pueden ver el plan.
+    El stage Apply solo corre en main Y requiere aprobación manual del environment "production" en Azure DevOps.
+    Eso significa que alguien del equipo tiene que hacer clic en "Approve" antes de que se apliquen cambios en producción.
+    El artefacto tfplan asegura que lo que se aplica es exactamente lo que fue revisado — no un plan nuevo.
+    Las credenciales AWS están en variables secretas de Azure DevOps: $(AWS_ACCESS_KEY_ID).
+    Nunca aparecen en el código ni en los logs del pipeline.
+  </aside>
+</section>
+
+<section>
+  <h3>Flujo: del commit al recurso AWS</h3>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-icon">📝</div>
+      <div><h5>1. Developer hace commit</h5>
+      <p>Modifica un <code>.tf</code> o <code>tfvars</code> y abre un Pull Request en Azure DevOps.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🔍</div>
+      <div><h5>2. Pipeline: terraform plan</h5>
+      <p>El plan se publica como comentario en el PR. El equipo revisa qué cambia en AWS.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">✅</div>
+      <div><h5>3. Aprobación y merge a main</h5>
+      <p>El arquitecto o tech lead aprueba. Al mergear se dispara el stage de Apply.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🚀</div>
+      <div><h5>4. terraform apply automático</h5>
+      <p>El pipeline aplica el plan. Los recursos en AWS son creados o modificados.</p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🪣</div>
+      <div><h5>5. State actualizado en S3</h5>
+      <p>Terraform actualiza el <code>tfstate</code> en S3. DynamoDB libera el lock.</p></div>
+    </div>
+  </div>
+  <aside class="notes">
+    Este flujo es el GitOps para infraestructura. El repositorio es la fuente de verdad.
+    Nada en AWS debería existir que no esté en el repositorio.
+    Para project managers: cada cambio en infraestructura tiene un PR con su descripción,
+    su revisor, su fecha y su autor. Auditoría completa sin esfuerzo extra.
+    Para developers: el flujo es el mismo que para el código de la aplicación.
+    Git, PR, review, merge. Ya saben hacerlo.
+    Pregunta para el auditorio: ¿qué pasa si alguien hace un cambio manual en la consola de AWS
+    sin pasar por Terraform? (respuesta: el próximo plan detecta el drift y puede revertirlo)
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     MÓDULO 8 — HANDS-ON
+══════════════════════════════════════════ -->
+<section>
+  <div class="mod-header">
+    <div class="mod-num">Módulo 08 · Hands-on</div>
+    <h2>Replica este portal</h2>
+    <p>Paso a paso desde cero</p>
+  </div>
+  <aside class="notes">
+    Momento práctico. Si tienen laptops en la sala, es el momento de que cada uno lo intente.
+    Si es una presentación solo visual, guíenlos paso a paso mostrando su terminal.
+    Al final de este módulo, cualquier persona con AWS credentials debería poder tener su propio portal.
+  </aside>
+</section>
+
+<section>
+  <h3>Prerequisitos</h3>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-icon">🔧</div>
+      <div><h5>1. Instalar Terraform</h5>
+      <p><strong>macOS:</strong> <code>brew install terraform</code> &nbsp;·&nbsp;
+         <strong>Windows:</strong> <code>choco install terraform</code> &nbsp;·&nbsp;
+         Verificar: <code>terraform version</code></p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🔑</div>
+      <div><h5>2. Configurar credenciales AWS</h5>
+      <p>Archivo <code>~/.aws/credentials</code><br/>
+      <code>[hackaton-aws]</code><br/>
+      <code>aws_access_key_id = TU_KEY &nbsp; aws_secret_access_key = TU_SECRET</code></p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">📁</div>
+      <div><h5>3. Clonar el repositorio</h5>
+      <p><code>git clone &lt;url-repo-azure-devops&gt;</code> &nbsp; entonces &nbsp; <code>cd terraform-capacitacion</code></p></div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-icon">✏️</div>
+      <div><h5>4. Ajustar terraform.tfvars</h5>
+      <p>Cambia <code>portal_bucket_name</code> — debe ser único globalmente en AWS.<br/>
+      Ej: <code>"terraform-capacitacion-portal-tu-nombre"</code></p></div>
+    </div>
+  </div>
+  <aside class="notes">
+    Si alguien no tiene AWS CLI instalado, también pueden verificar con:
+    aws sts get-caller-identity --profile hackaton-aws
+    Si devuelve el Account ID, las credenciales están bien configuradas.
+    El paso más importante antes de apply: asegurarse de que el nombre del bucket sea único.
+    Los nombres de S3 son globales en AWS — si alguien más ya usó ese nombre, el apply fallará.
+    Tip: usen su nombre o el ID de su cuenta como sufijo del bucket.
+  </aside>
+</section>
+
+<section>
+  <h3>Desplegar — los 3 comandos mágicos</h3>
+  <div class="demo-banner">⚡ Estos son exactamente los comandos que ejecutamos al inicio</div>
+  <pre><code class="language-bash"># 1. Inicializar — descarga el provider AWS
+terraform init
+
+# Salida esperada:
+# Terraform has been successfully initialized!
+
+# ──────────────────────────────────────────────
+
+# 2. Planificar — ver qué se va a crear (sin cambios reales)
+terraform plan
+
+# Salida esperada:
+# Plan: 8 to add, 0 to change, 0 to destroy.
+
+# ──────────────────────────────────────────────
+
+# 3. Aplicar — crear la infraestructura en AWS
+terraform apply
+# Escribe "yes" cuando lo pida
+
+# Al finalizar:
+# portal_url = "https://xxxxx.cloudfront.net"</code></pre>
+  <aside class="notes">
+    Si están haciendo el hands-on en vivo, corran cada comando paso a paso y esperen a que todos terminen.
+    El init es casi instantáneo. El plan tarda segundos. El apply puede tardar hasta 3 minutos
+    principalmente por CloudFront que necesita propagarse globalmente.
+    Mientras esperan el apply, aprovechen para preguntar: ¿qué creen que está pasando en AWS ahora mismo?
+    Al terminar, el output portal_url aparece automáticamente. Que alguien del auditorio lo abra en su navegador.
+    Eso es el momento WOW: ellos desplegaron su propio portal.
+  </aside>
+</section>
+
+<section>
+  <h3>Verificar y limpiar</h3>
+  <div class="g2">
+    <div>
+      <p style="color:var(--tf-purple2); font-weight:700; font-size:clamp(0.65rem,1.1vw,0.8rem); margin:0 0 4px;">✅ Verificar</p>
+      <pre><code class="language-bash"># Ver todos los outputs
+terraform output
+
+# Abrir el portal
+open $(terraform output -raw portal_url)
+
+# Listar recursos del state
+terraform state list
+
+# Ver detalles de CloudFront
+terraform state show \
+  aws_cloudfront_distribution.portal</code></pre>
+    </div>
+    <div>
+      <p style="color:var(--tf-red); font-weight:700; font-size:clamp(0.65rem,1.1vw,0.8rem); margin:0 0 4px;">🧹 Limpiar al finalizar</p>
+      <pre><code class="language-bash"># Destruir todos los recursos
+terraform destroy
+# Escribe "yes" para confirmar</code></pre>
+      <div class="card" style="margin-top:6px; border-color:rgba(248,113,113,0.4);">
+        <h4 style="color:var(--tf-red);">☠️ destroy en producción</h4>
+        <p>Nunca en producción sin revisar el plan de destrucción. Siempre hay recursos protegidos: RDS, S3 con datos, etc.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    Muestren terraform state list en la terminal — la audiencia verá todos los recursos que Terraform gestiona.
+    terraform output -raw portal_url devuelve solo la URL sin comillas — perfecto para usarla en scripts o para abrir con open.
+    Al final de la sesión, corran terraform destroy en vivo. La audiencia verá cómo Terraform
+    elimina en orden inverso todos los recursos que creó. Es casi tan impresionante como el apply.
+    Importante: si alguien no destruye su entorno de demo, empezará a generar costos en AWS.
+    CloudFront tiene un mínimo de 1,000 peticiones gratis, pero si se deja activo, empieza a cobrar.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     BUENAS PRÁCTICAS
+══════════════════════════════════════════ -->
+<section>
+  <div class="mod-header">
+    <div class="mod-num">Bonus</div>
+    <h2>Buenas prácticas</h2>
+    <p>Lo que aprendemos trabajando con Terraform en producción</p>
+  </div>
+  <aside class="notes">
+    Este slide es opcional según el tiempo disponible.
+    Son las lecciones aprendidas del equipo — no son teóricas.
+    Si tienen tiempo, conversen sobre cada una y pregunten si alguna les ha quemado antes.
+  </aside>
+</section>
+
+<section>
+  <h3>10 reglas que evitan dolores de cabeza</h3>
+  <div class="agenda-grid">
+    <div class="ag-item"><span class="ag-num">01</span> Siempre revisa el <strong>terraform plan</strong> antes del apply</div>
+    <div class="ag-item"><span class="ag-num">02</span> Remote state en S3 con <strong>DynamoDB lock</strong> desde el día 1</div>
+    <div class="ag-item"><span class="ag-num">03</span> Usa <strong>tfvars por ambiente</strong> — nunca hardcodees valores</div>
+    <div class="ag-item"><span class="ag-num">04</span> Agrega <strong>tags</strong> a todos los recursos (costos, responsable)</div>
+    <div class="ag-item"><span class="ag-num">05</span> Nunca borres ni edites el <strong>tfstate</strong> manualmente</div>
+    <div class="ag-item"><span class="ag-num">06</span> <strong>Versiona</strong> tus providers — evita rangos abiertos</div>
+    <div class="ag-item"><span class="ag-num">07</span> Usa <strong>módulos</strong> para infraestructura que se repite</div>
+    <div class="ag-item"><span class="ag-num">08</span> <strong>Code review</strong> obligatorio para cambios en producción</div>
+    <div class="ag-item"><span class="ag-num">09</span> Las credenciales van en <strong>variables de entorno</strong>, nunca en el código</div>
+    <div class="ag-item"><span class="ag-num">10</span> Agrega <strong>.gitignore</strong> — nunca subas <code>.terraform/</code> ni <code>*.tfstate</code></div>
+  </div>
+  <aside class="notes">
+    Recorran las 10 rápido y deténganse en las que el equipo ha vivido en carne propia.
+    La 01 parece obvia pero en la práctica la presión del tiempo lleva a saltársela — y ahí ocurren los accidentes.
+    La 04 sobre tags es clave para los gerentes: sin tags no pueden saber qué recursos pertenecen a qué proyecto
+    en la factura de AWS. Con tags pueden filtrar costos por equipo, por ambiente, por proyecto.
+    La 09 es la más crítica de seguridad: un access key en un repositorio Git puede costar miles de dólares
+    si un bot lo detecta y lo usa para minar crypto. GitHub y Azure DevOps tienen scanners que detectan esto.
+    La 10: si alguien sube .terraform/ al repo, están subiendo los binarios del provider (cientos de MB) al Git.
+    Si suben *.tfstate, están publicando IDs, ARNs y posiblemente secretos de producción.
+  </aside>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SLIDE FINAL
+══════════════════════════════════════════ -->
+<section data-background-gradient="linear-gradient(135deg,#0f3460 0%,#16213e 55%,#0f0f1a 100%)">
+  <div style="padding: 0.5em 0;">
+    <div style="font-size:clamp(2rem,4vw,3.5rem);">🎉</div>
+    <h2 style="margin:0.2em 0 0.1em;">¡Gracias!</h2>
+    <p style="color:var(--tf-purple2); font-size:clamp(0.8rem,1.4vw,1rem);">
+      Este portal fue construido y desplegado con Terraform
+    </p>
+    <div class="tags" style="margin:0.8em 0;">
+      <span class="tag t-orange">AWS S3</span>
+      <span class="tag t-blue">CloudFront</span>
+      <span class="tag t-purple">Terraform 1.5+</span>
+      <span class="tag t-blue">Azure DevOps</span>
+      <span class="tag t-green">HCL</span>
+    </div>
+    <div class="card" style="max-width:500px; margin:0.6em auto; text-align:center;">
+      <p style="font-size:clamp(0.7rem,1.2vw,0.85rem);">
+        <strong>Repo:</strong> Azure DevOps → terraform-capacitacion<br/>
+        <strong>State:</strong> s3://terraform-capacitacion-state<br/>
+        <strong>Stack:</strong> HCL · AWS · CI/CD · tfvars
+      </p>
+    </div>
+    <p style="color:#4b5563; font-size:clamp(0.5rem,0.8vw,0.62rem); margin-top:0.8em;">
+      ← → navegar &nbsp;·&nbsp; F pantalla completa &nbsp;·&nbsp; S notas del ponente
+    </p>
+  </div>
+  <aside class="notes">
+    Cierren con energía. Recuerden el momento del inicio: tres minutos, dos comandos, este portal.
+    Eso es Terraform. Repitan el mensaje clave: infraestructura predecible, versionada, revisada y automatizada.
+    Abran espacio para preguntas. Las más comunes suelen ser:
+    — ¿Cómo migramos infraestructura existente a Terraform? (terraform import)
+    — ¿Qué pasa si dos personas hacen apply al mismo tiempo? (DynamoDB lock lo previene)
+    — ¿Puedo usar Terraform para gestionar recursos de Azure también? (sí, con el provider de Azure)
+    — ¿Hay algún costo por usar Terraform? (Terraform open-source es gratis. Terraform Cloud tiene un plan gratuito.)
+    Recuerden compartir el link del repositorio para que puedan practicar en casa.
+    ¡Excelente presentación!
+  </aside>
+</section>
+
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/zoom/zoom.js"></script>
+
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'fade',
+    center: true,
+    margin: 0.04,
+    minScale: 0.2,
+    maxScale: 2.0,
+    width: 1280,
+    height: 720,
+    plugins: [ RevealHighlight, RevealNotes, RevealZoom ]
+  });
+</script>
+</body>
+</html>
