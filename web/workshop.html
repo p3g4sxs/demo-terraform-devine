@@ -714,20 +714,21 @@ aws-cli/2.x.x Python/3.x.x Linux/...</pre>
               <div class="step-line"></div>
             </div>
             <div class="step-content">
-              <h4>Crear o editar el archivo de credenciales</h4>
-              <p>Abre (o crea) el archivo <code>~/.aws/credentials</code> y agrega este bloque:</p>
+              <h4>Configurar las credenciales con AWS CLI</h4>
+              <p>Ejecuta el siguiente comando e ingresa los datos que te proporciona el instructor:</p>
               <div class="code-block">
                 <div class="code-header">
-                  <span class="code-lang">ini — ~/.aws/credentials</span>
+                  <span class="code-lang">bash — WSL2 Ubuntu</span>
                   <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
                 </div>
-                <pre>[terraform-workshop]
-aws_access_key_id     = TU_ACCESS_KEY_AQUI
-aws_secret_access_key = TU_SECRET_KEY_AQUI</pre>
+                <pre>aws configure --profile terraform-workshop</pre>
               </div>
-              <div class="callout callout-info" style="margin-top:10px;">
-                <span class="icon">💡</span>
-                <p>Dentro de WSL2 el archivo está en <code>~/.aws/credentials</code>. Si la carpeta no existe, créala con <code>mkdir -p ~/.aws</code> y luego edita el archivo con <code>nano ~/.aws/credentials</code>.</p>
+              <div class="expected" style="margin-top:10px;">
+                <div class="expected-label">📝 Te pedirá 4 datos — ingresa estos valores</div>
+                <pre>AWS Access Key ID [None]:     <span class="success">TU_ACCESS_KEY</span>
+AWS Secret Access Key [None]: <span class="success">TU_SECRET_KEY</span>
+Default region name [None]:   <span class="success">us-east-1</span>
+Default output format [None]: <span class="success">json</span></pre>
               </div>
             </div>
           </div>
